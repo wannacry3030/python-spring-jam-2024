@@ -160,6 +160,12 @@ class Player(AnimatedEntity):
         super().draw(surface)  # Assume que AnimatedEntity tem um método draw
         self.health_bar.draw(surface)
         self.mana_bar.draw(surface)
+
+class AnimatedLife(AnimatedEntity):
+    def __init__(self, x, y):
+        sprite_paths = ['assets/sol1.png', 'assets/sol2.png']  # Adicione os caminhos para suas imagens de coração aqui
+        super().__init__(x, y, 50, 50, sprite_paths, animation_time=0.3)  # Ajuste animation_time para controlar a velocidade da animação
+
                 
 class Life:
     def __init__(self):
@@ -288,10 +294,10 @@ class Projectile:
         self.angle = angle
         self.size = size
         self.radius = radius * self.size
-        self.original_sprite = pygame.image.load("assets/semente.png").convert_alpha()
-        self.original_sprite = pygame.transform.scale(self.original_sprite, (24,24))
-        self.sprite = self.original_sprite
-        self.angle_degrees = -math.degrees(angle) - 90
+        # self.original_sprite = pygame.image.load("assets/semente.png").convert_alpha()
+        # self.original_sprite = pygame.transform.scale(self.original_sprite, (24,24))
+        # self.sprite = self.original_sprite
+        # self.angle_degrees = -math.degrees(angle) - 90
         self.damage = damage if size == 1 else damage * 3  # Aumenta o dano se for um projétil especial
         self.owner = owner
         
@@ -363,9 +369,10 @@ class GameManager:
 
     def spawn_lives(self):
         current_time = time.time()
-        if current_time - self.last_life_spawn > 3:
-          self.lives.append(Life())
-          self.last_life_spawn = current_time    
+        if current_time - self.last_life_spawn > 5:  # Ajuste o tempo conforme necessário
+            self.lives.append(AnimatedLife(random.randint(0, screen_width - 30), random.randint(0, screen_height - 30)))
+            self.last_life_spawn = current_time
+
  
     def spawn_boss(self):
         # Condição para spawnar o boss, por exemplo, alcançar um certo score
@@ -554,6 +561,7 @@ class GameManager:
             enemy.draw(screen)
         for life in self.lives:
             life.draw(screen)
+            life.update_sprites()
         if self.boss:
             self.boss.draw(surface)
         self.player.draw(surface)
