@@ -100,7 +100,6 @@ class DamageIndicator:
         # Verifica se a duração do indicador expirou
         return pygame.time.get_ticks() - self.creation_time > self.duration
 
-
 class Player(AnimatedEntity):
     def __init__(self, x, y):
         sprite_paths = [f'assets/flower{i}.png' for i in range(1, 3)]
@@ -109,7 +108,7 @@ class Player(AnimatedEntity):
         self.lives = 5
         self.max_health = 100
         self.current_health =self.max_health
-        self.health_bar = StatusBar(10, 10, 50, 8, (212, 115, 115), self.max_health)  
+        self.health_bar = StatusBar(10, 10, 50, 8, (251,242,54), self.max_health)  
         self.max_mana = 20
         self.current_mana = 20
         self.mana_bar = StatusBar(x, y - 20, 50, 8, (115,122,212), self.max_mana)  # Mana
@@ -167,15 +166,15 @@ class AnimatedLife(AnimatedEntity):
         super().__init__(x, y, 50, 50, sprite_paths, animation_time=0.3)  # Ajuste animation_time para controlar a velocidade da animação
 
                 
-class Life:
-    def __init__(self):
-        self.width = 30
-        self.height = 30
-        self.x = random.randint(0, screen_width - self.width)
-        self.y = random.randint(0, screen_height - self.height)
+# class Life:
+#     def __init__(self):
+#         self.width = 30
+#         self.height = 30
+        # self.x = random.randint(0, screen_width - self.width)
+        # self.y = random.randint(0, screen_height - self.height)
 
-    def draw(self, surface):
-        pygame.draw.rect(surface, PINK, (self.x, self.y, self.width, self.height))
+    # def draw(self, surface):
+    #     pygame.draw.rect(surface, PINK, (self.x, self.y, self.width, self.height))
 
 class Enemy(AnimatedEntity):
     def __init__(self, x, y, width, height, sprite_paths, speed, damage):
@@ -208,7 +207,7 @@ class RedEnemy(Enemy):
 
 class WhiteEnemy(Enemy):
     def __init__(self, x, y):
-        sprite_paths = [f'assets/enemy{i}.png' for i in range(1)]
+        sprite_paths = [f'assets/enemy{i}.png' for i in range(1,2)]
         super().__init__(x, y, 60, 60, sprite_paths, speed=2, damage=1)
         self.lives = 1
         self.score_value = 1
@@ -271,7 +270,6 @@ class Boss(AnimatedEntity):
         if pygame.time.get_ticks() % 2000 < 50:  # A cada aproximadamente 2 segundos
             self.perform_attack(game_manager)
 
-
 class ProjectileFactory:
     @staticmethod
     def create_projectile(type, x, y, target_x, target_y, player_mana):
@@ -283,8 +281,7 @@ class ProjectileFactory:
                 return Projectile(x, y, angle, size=3, speed=20, radius=15, damage=3)
         # Adicionar mais condições para diferentes tipos de projéteis
         return None
-
-        
+      
 class Projectile:
     # O construtor e o método move() permanecem os mesmos
     def __init__(self, x, y, angle, size=1, speed=15, radius=5, damage=1, owner ="player", is_special=False):
@@ -294,10 +291,6 @@ class Projectile:
         self.angle = angle
         self.size = size
         self.radius = radius * self.size
-        # self.original_sprite = pygame.image.load("assets/semente.png").convert_alpha()
-        # self.original_sprite = pygame.transform.scale(self.original_sprite, (24,24))
-        # self.sprite = self.original_sprite
-        # self.angle_degrees = -math.degrees(angle) - 90
         self.damage = damage if size == 1 else damage * 3  # Aumenta o dano se for um projétil especial
         self.owner = owner
         
