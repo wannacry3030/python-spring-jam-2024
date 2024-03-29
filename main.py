@@ -4,6 +4,8 @@ import math
 import random
 import time
 
+# TEM ALGUM B.O NO PROJETIL DO BOSS, ELE DA 9 DE DANO INFINITAS VEZES, PARECE Q TEM MAIS DE 1 PROJETIL DENTRO DO PROJETIL, TIPO CAMADAS -----------------------------------------------------------------------------------
+
 # Inicialização do Pygame
 pygame.init()
 
@@ -77,6 +79,27 @@ class StatusBar:
         pygame.draw.rect(surface, (255, 255, 255), (self.x, self.y, self.width, self.height))
         pygame.draw.rect(surface, (0, 0, 255), (self.x, self.y, fill_width, self.height))
 
+class DamageIndicator:
+    def __init__(self, x, y, damage, font, duration=1000):
+        self.x = x
+        self.y = y
+        self.damage = damage
+        self.font = font
+        self.creation_time = pygame.time.get_ticks()
+        self.duration = duration
+
+    def update(self):
+        # Reduz a posição y para o texto subir
+        self.y -= 1
+
+    def draw(self, screen):
+        damage_text = self.font.render(str(self.damage), True, RED)
+        screen.blit(damage_text, (self.x, self.y))
+
+    def is_expired(self):
+        # Verifica se a duração do indicador expirou
+        return pygame.time.get_ticks() - self.creation_time > self.duration
+
 
 class Player(AnimatedEntity):
     def __init__(self, x, y):
@@ -84,24 +107,14 @@ class Player(AnimatedEntity):
         super().__init__(x, y, 50, 50, sprite_paths)  # Ajuste a largura, altura e sprite_paths conforme necessário
         self.speed = 8
         self.lives = 5
-        self.max_health = 5
+        self.max_health = 20
         self.current_health =self.max_health
         self.health_bar = StatusBar(10, 10, 50, 8, (212, 115, 115), self.max_health)  
         self.max_mana = 20
         self.current_mana = 20
         self.mana_bar = StatusBar(x, y - 20, 50, 8, (115,122,212), self.max_mana)  # Mana
         self.mana_cost = 10
-        self.damage_cooldown = 500
-        self.last_damage_time = 0
-            
-    def can_take_damage(self):
-        return pygame.time.get_ticks() - self.last_damage_time > self.damage_cooldown
 
-    def take_damage(self, damage):
-        if self.can_take_damage():
-            self.current_health -= damage
-            self.last_damage_time = pygame.time.get_ticks()
-            # Outras lógicas de quando o jogador recebe dano
 
     def move(self, keys):
         # Mover o jogador e garantir que ele não saia da tela
@@ -285,7 +298,10 @@ class GameManager:
         self.boss = None
         self.current_score = 0
         self.high_score = self.load_high_score()
-        self.mana_recharge_rate = 0.1
+        self.mana_recharge_rate = 0.08
+        self.damage_indicators = []  
+
+        self.font = pygame.font.Font(None, 36)
         
     def reset_game(self):
         self.game_over = False
@@ -444,6 +460,9 @@ class GameManager:
             # Checagem de colisão com o jogador para projéteis do boss
             elif projectile.owner == "boss":
                 if pygame.Rect(projectile.x - projectile.radius, projectile.y - projectile.radius, projectile.radius * 2, projectile.radius * 2).colliderect(pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height)):
+                    print(f"Creating damage indicator for {projectile.damage} damage")
+                    damage_indicator = DamageIndicator(projectile.x, projectile.y, projectile.damage, self.font)
+                    self.damage_indicators.append(damage_indicator)
                     self.player.lose_life(projectile.damage)  # Aplica o dano corretamente
                     self.projectiles.remove(projectile)
                     
@@ -458,6 +477,8 @@ class GameManager:
                             
         for enemy in self.enemies[:]:
             if pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height).colliderect(pygame.Rect(enemy.x, enemy.y, enemy.width, enemy.height)):
+                damage_indicator = DamageIndicator(enemy.x, enemy.y, enemy.damage, self.font)
+                self.damage_indicators.append(damage_indicator)
                 self.player.lose_life(enemy.damage)  # O jogador perde vidas com base no dano do inimigo
                 self.apply_knock_back(enemy) 
                              
@@ -472,17 +493,26 @@ class GameManager:
                 else:
                     for enemy in self.enemies[:]:
                         if pygame.Rect(enemy.x, enemy.y, enemy.width, enemy.height).colliderect(pygame.Rect(projectile.x - projectile.radius, projectile.y - projectile.radius, projectile.radius * 2, projectile.radius * 2)):
+                            damage_indicator = DamageIndicator(enemy.x, enemy.y, projectile.damage, self.font)
+                            self.damage_indicators.append(damage_indicator)
                             enemy.lose_life(projectile.damage)  # O inimigo perde uma vida
                             if not enemy.is_alive():  # Se o inimigo não estiver mais vivo, remova-o
                                 self.current_score += enemy.score_value
                                 self.enemies.remove(enemy)
                             if projectile in self.projectiles:
                                 self.projectiles.remove(projectile)
+        
+     
 
         self.spawn_enemies()
     
     def draw(self,surface):
         screen.blit(fundo_surface, (0, 0))
+        for indicator in self.damage_indicators[:]:
+            indicator.update()
+            indicator.draw(screen)
+            if indicator.is_expired():
+                self.damage_indicators.remove(indicator)  
         for projectile in self.projectiles:
             projectile.draw(screen)
         for enemy in self.enemies:
