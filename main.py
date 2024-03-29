@@ -107,7 +107,7 @@ class Player(AnimatedEntity):
         super().__init__(x, y, 50, 50, sprite_paths)  # Ajuste a largura, altura e sprite_paths conforme necessário
         self.speed = 8
         self.lives = 5
-        self.max_health = 20
+        self.max_health = 30
         self.current_health =self.max_health
         self.health_bar = StatusBar(10, 10, 50, 8, (212, 115, 115), self.max_health)  
         self.max_mana = 20
@@ -235,6 +235,7 @@ class Boss(AnimatedEntity):
 
     def perform_attack(self, game_manager):
         # Dispara projéteis em várias direções
+        print("Atacando: criando projéteis")
         for angle in range(0, 360, 45):  # Exemplo: dispara em 8 direções diferentes
             rad_angle = math.radians(angle)
             game_manager.spawn_projectile(self.x, self.y, rad_angle, is_special=True, owner="boss")
@@ -305,6 +306,8 @@ class GameManager:
         
     def reset_game(self):
         self.game_over = False
+        self.boss_defeated = False
+        self.boss = None
         self.current_score = 0
         self.player = Player(screen_width // 2, screen_height // 2)
         self.enemies = []
@@ -339,13 +342,14 @@ class GameManager:
  
     def spawn_boss(self):
         # Condição para spawnar o boss, por exemplo, alcançar um certo score
-        if self.current_score > 5 and self.boss is None:
+        if self.current_score > 5 and self.boss is None and not self.boss_defeated:
             self.boss = Boss(screen_width // 2, 100)  # Ajuste a posição de spawn
             
     def spawn_projectile(self, x, y, angle, is_special, owner=""):
         # if is_special:
             # Parâmetros para projéteis especiais
         # Parâmetros para projéteis especiais
+        print(f"Criando projétil de {owner} em x:{x}, y:{y}")
         size = 3 if is_special else 1
         speed = 20 if is_special else 15
         radius = 10 if is_special else 5
@@ -456,6 +460,7 @@ class GameManager:
                     # Verifica se o boss foi derrotado
                     if self.boss.lives <= 0:
                         self.boss = None
+                        self.boss_defeated = True
 
             # Checagem de colisão com o jogador para projéteis do boss
             elif projectile.owner == "boss":
