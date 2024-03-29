@@ -107,7 +107,7 @@ class Player(AnimatedEntity):
         super().__init__(x, y, 50, 50, sprite_paths)  # Ajuste a largura, altura e sprite_paths conforme necessário
         self.speed = 8
         self.lives = 5
-        self.max_health = 30
+        self.max_health = 10
         self.current_health =self.max_health
         self.health_bar = StatusBar(10, 10, 50, 8, (212, 115, 115), self.max_health)  
         self.max_mana = 20
@@ -239,7 +239,7 @@ class Boss(AnimatedEntity):
         # Dispara projéteis em várias direções
         current_time = pygame.time.get_ticks()
         if current_time - self.last_attack_time >= self.attack_cooldown:
-            print("Atacando: criando projéteis")
+            # print("Atacando: criando projéteis")
             for angle in range(0, 360, 45):  # Exemplo: dispara em 8 direções diferentes
                 rad_angle = math.radians(angle)
                 game_manager.spawn_projectile(self.x, self.y, rad_angle, is_special=True, owner="boss")
@@ -257,7 +257,7 @@ class Boss(AnimatedEntity):
         if self.lives < self.max_lives / 2 and self.phase == 1:
             self.phase = 2
             # Muda para uma fase mais agressiva
-            self.speed += 2
+            self.speed += 4
             
         
         # Move o boss em direção ao jogador
@@ -290,6 +290,10 @@ class Projectile:
         self.angle = angle
         self.size = size
         self.radius = radius * self.size
+        self.original_sprite = pygame.image.load("assets/semente.png").convert_alpha()
+        self.original_sprite = pygame.transform.scale(self.original_sprite, (20,20))
+        self.sprite = self.original_sprite
+        self.angle_degrees = -math.degrees(angle)
         self.damage = damage if size == 1 else damage * 3  # Aumenta o dano se for um projétil especial
         self.owner = owner
 
@@ -298,8 +302,12 @@ class Projectile:
         self.y += self.speed * math.sin(self.angle)
         
     def draw(self, surface):
-        pygame.draw.circle(surface, WHITE, (int(self.x), int(self.y)), self.radius)
-
+        # Rotaciona o sprite baseado no ângulo do tiro cada vez antes de desenhar
+        self.sprite = pygame.transform.rotate(self.original_sprite, self.angle_degrees)
+        # Calcula o novo rect do sprite para manter o posicionamento correto
+        rect = self.sprite.get_rect(center=(self.x, self.y))
+        surface.blit(self.sprite, rect.topleft)
+        
 class GameManager:
     def __init__(self):
         self.reset_game()
@@ -343,7 +351,7 @@ class GameManager:
 
     def spawn_lives(self):
         current_time = time.time()
-        if current_time - self.last_life_spawn > 5:
+        if current_time - self.last_life_spawn > 3:
           self.lives.append(Life())
           self.last_life_spawn = current_time    
  
@@ -356,7 +364,7 @@ class GameManager:
         # if is_special:
             # Parâmetros para projéteis especiais
         # Parâmetros para projéteis especiais
-        print(f"Criando projétil de {owner} em x:{x}, y:{y}")
+        # print(f"Criando projétil de {owner} em x:{x}, y:{y}")
         size = 3 if is_special else 1
         speed = 20 if is_special else 15
         radius = 10 if is_special else 5
@@ -481,11 +489,14 @@ class GameManager:
         if self.player.current_health <= 0:
             self.game_over = True
             
-        for life in self.lives[:]:
+        for life in self.lives[:]:  # Use uma cópia da lista para iterar se você está removendo itens dela
             if pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height).colliderect(pygame.Rect(life.x, life.y, life.width, life.height)):
+                # print("Saúde antes: ", self.player.current_health)
                 self.player.current_health += 1  # Aumenta a saúde do jogador
-                self.player.current_health = min(self.player.current_health, self.player.max_health)
-                self.lives.remove(life)
+                # print("Saúde depois: ", self.player.current_health)
+                self.player.current_health = min(self.player.current_health, self.player.max_health)  # Não permite que a saúde exceda o máximo
+                self.player.health_bar.update(self.player.current_health)
+                self.lives.remove(life) 
                             
         for enemy in self.enemies[:]:
             if pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height).colliderect(pygame.Rect(enemy.x, enemy.y, enemy.width, enemy.height)):
