@@ -219,6 +219,8 @@ class Boss(AnimatedEntity):
         self.speed = 2  # Velocidade de movimento do boss
         self.attack_pattern = 0  # Padrão de ataque atual do boss 
         self.phase = 1
+        self.attack_cooldown = 2000
+        self.last_attack_time = 0
         
     def move_towards_player(self, player_x, player_y):
         # Calcula a direção em direção ao jogador
@@ -235,11 +237,14 @@ class Boss(AnimatedEntity):
 
     def perform_attack(self, game_manager):
         # Dispara projéteis em várias direções
-        print("Atacando: criando projéteis")
-        for angle in range(0, 360, 45):  # Exemplo: dispara em 8 direções diferentes
-            rad_angle = math.radians(angle)
-            game_manager.spawn_projectile(self.x, self.y, rad_angle, is_special=True, owner="boss")
-            
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_attack_time >= self.attack_cooldown:
+            print("Atacando: criando projéteis")
+            for angle in range(0, 360, 45):  # Exemplo: dispara em 8 direções diferentes
+                rad_angle = math.radians(angle)
+                game_manager.spawn_projectile(self.x, self.y, rad_angle, is_special=True, owner="boss")
+            self.last_attack_time = current_time
+                
     def draw(self, surface):
         super().draw(surface)
         # Calcula a largura da barra de vida com base na vida atual do boss
@@ -247,11 +252,13 @@ class Boss(AnimatedEntity):
         pygame.draw.rect(surface, (255, 0, 0), (self.x, self.y - 10, life_bar_width, 5))
 
     def update(self, player_x, player_y, game_manager):
+        self.perform_attack(game_manager)
         # Atualiza a fase do boss com base em sua vida
         if self.lives < self.max_lives / 2 and self.phase == 1:
             self.phase = 2
             # Muda para uma fase mais agressiva
             self.speed += 2
+            
         
         # Move o boss em direção ao jogador
         self.move_towards_player(player_x, player_y)
