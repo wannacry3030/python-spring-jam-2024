@@ -162,10 +162,13 @@ class Enemy(AnimatedEntity):
         angle = math.atan2(player_y - self.y, player_x - self.x)
         self.x += self.speed * math.cos(angle)
         self.y += self.speed * math.sin(angle)
+        
     def draw(self, surface):
         surface.blit(self.sprites[self.current_sprite], (self.x, self.y))
+        
     def lose_life(self,damage):
-        self.lives -= 1
+        self.lives -= damage
+        
     def is_alive(self):
         return self.lives > 0
 
@@ -173,7 +176,7 @@ class RedEnemy(Enemy):
     def __init__(self, x, y):
         sprite_paths = [f'assets/enemy{i}.png' for i in range(1)]
         super().__init__(x, y, 100, 100, sprite_paths, speed=3, damage=2)
-
+        self.lives = 3
         self.score_value = 2
 
 class WhiteEnemy(Enemy):
@@ -182,6 +185,56 @@ class WhiteEnemy(Enemy):
         super().__init__(x, y, 60, 60, sprite_paths, speed=2, damage=1)
         self.lives = 1
         self.score_value = 1
+
+class Boss(AnimatedEntity):
+    def __init__(self, x, y):
+        sprite_paths = ['assets/boss.png']  # Adicione o caminho para os sprites do boss
+        super().__init__(x, y, 150, 150, sprite_paths, 0.2)  # Tamanho e tempo de animação ajustáveis
+        self.max_lives = 100
+        self.lives = self.max_lives
+        self.damage = 5  # Dano que o boss causa
+        self.speed = 2  # Velocidade de movimento do boss
+        self.attack_pattern = 0  # Padrão de ataque atual do boss 
+        
+    def move_towards_player(self, player_x, player_y):
+        # Calcula a direção em direção ao jogador
+        dx = player_x - self.x
+        dy = player_y - self.y
+        dist = math.sqrt(dx**2 + dy**2)
+        
+        # Normaliza a direção
+        dx, dy = dx / dist, dy / dist
+        
+        # Aplica a velocidade ao boss e move-o em direção ao jogador
+        self.x += dx * self.speed
+        self.y += dy * self.speed
+
+    def perform_attack(self, game_manager):
+        # Dispara projéteis em várias direções
+        for angle in range(0, 360, 45):  # Exemplo: dispara em 8 direções diferentes
+            rad_angle = math.radians(angle)
+            game_manager.spawn_projectile(self.x, self.y, rad_angle, is_special=True)
+            
+    def draw(self, surface):
+        super().draw(surface)
+        # Calcula a largura da barra de vida com base na vida atual do boss
+        life_bar_width = (self.lives / self.max_lives) * self.width
+        pygame.draw.rect(surface, (255, 0, 0), (self.x, self.y - 10, life_bar_width, 5))
+
+    def update(self, player_x, player_y, game_manager):
+        # Atualiza a fase do boss com base em sua vida
+        if self.lives < self.max_lives / 2 and self.phase == 1:
+            self.phase = 2
+            # Muda para uma fase mais agressiva
+            self.speed += 1
+        
+        # Move o boss em direção ao jogador
+        self.move_towards_player(player_x, player_y)
+        
+        # Realiza um ataque periodicamente
+        if pygame.time.get_ticks() % 2000 < 50:  # A cada aproximadamente 2 segundos
+            self.perform_attack(game_manager)
+
 
 class ProjectileFactory:
     @staticmethod
@@ -217,9 +270,10 @@ class Projectile:
 class GameManager:
     def __init__(self):
         self.reset_game()
+        self.boss = None
         self.current_score = 0
         self.high_score = self.load_high_score()
-        self.mana_recharge_rate = 1
+        self.mana_recharge_rate = 0.1
         
     def reset_game(self):
         self.game_over = False
@@ -254,7 +308,30 @@ class GameManager:
         if current_time - self.last_life_spawn > 5:
           self.lives.append(Life())
           self.last_life_spawn = current_time    
-                
+ 
+    def spawn_boss(self):
+        # Condição para spawnar o boss, por exemplo, alcançar um certo score
+        if self.current_score > 5 and self.boss is None:
+            self.boss = Boss(screen_width // 2, 100)  # Ajuste a posição de spawn
+            
+    def spawn_projectile(self, x, y, angle, is_special):
+        if is_special:
+            # Parâmetros para projéteis especiais
+            size = 3  # Tamanho maior para projéteis especiais
+            speed = 20  # Uma velocidade maior para diferenciar
+            radius = 10  # Um raio maior para impacto visual e de colisão
+            damage = 3  # Dano base maior; será triplicado conforme sua lógica no __init__ do Projectile
+        else:
+            # Parâmetros padrão para projéteis normais
+            size = 1
+            speed = 15
+            radius = 5
+            damage = 1
+
+        # Cria o projétil com os parâmetros determinados
+        new_projectile = Projectile(x, y, angle, size, speed, radius, damage)
+        self.projectiles.append(new_projectile)
+                    
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -327,10 +404,10 @@ class GameManager:
         self.player.update_sprites()
         self.player.current_mana = min(self.player.current_mana + self.mana_recharge_rate, self.player.max_mana)
         self.player.mana_bar.update(self.player.current_mana)
+        self.spawn_boss()
         
-        # if not self.player.is_alive():
-        #     self.game_over = True
-        #     return
+        if self.boss:
+            self.boss.update(self.player.x, self.player.y, self)
         if self.player.current_health <= 0:
             self.game_over = True
             
@@ -373,6 +450,8 @@ class GameManager:
             enemy.draw(screen)
         for life in self.lives:
             life.draw(screen)
+        if self.boss:
+            self.boss.draw(surface)
         self.player.draw(surface)
         # Desenha a pontuação atual
         score_text = font.render(f"Score: {self.current_score}", True, WHITE)
