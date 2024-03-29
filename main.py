@@ -91,7 +91,17 @@ class Player(AnimatedEntity):
         self.current_mana = 20
         self.mana_bar = StatusBar(x, y - 20, 50, 8, (115,122,212), self.max_mana)  # Mana
         self.mana_cost = 10
+        self.damage_cooldown = 500
+        self.last_damage_time = 0
             
+    def can_take_damage(self):
+        return pygame.time.get_ticks() - self.last_damage_time > self.damage_cooldown
+
+    def take_damage(self, damage):
+        if self.can_take_damage():
+            self.current_health -= damage
+            self.last_damage_time = pygame.time.get_ticks()
+            # Outras lógicas de quando o jogador recebe dano
 
     def move(self, keys):
         # Mover o jogador e garantir que ele não saia da tela
@@ -127,7 +137,7 @@ class Player(AnimatedEntity):
         self.mana_bar.x = self.x
         self.mana_bar.y = self.y + 70
 
-    def lose_life(self, damage=1):
+    def lose_life(self, damage):
         self.current_health -= damage
         self.current_health = max(0, self.current_health)  # Evita saúde negativa
         self.health_bar.update(self.current_health)  # Atualiza a barra de vida
@@ -188,13 +198,14 @@ class WhiteEnemy(Enemy):
 
 class Boss(AnimatedEntity):
     def __init__(self, x, y):
-        sprite_paths = ['assets/boss.png']  # Adicione o caminho para os sprites do boss
+        sprite_paths = [f'assets/boss{i}.png' for i in range(1, 2)]  # Adicione o caminho para os sprites do boss
         super().__init__(x, y, 150, 150, sprite_paths, 0.2)  # Tamanho e tempo de animação ajustáveis
         self.max_lives = 100
         self.lives = self.max_lives
-        self.damage = 5  # Dano que o boss causa
+        self.damage = 3  # Dano que o boss causa
         self.speed = 2  # Velocidade de movimento do boss
         self.attack_pattern = 0  # Padrão de ataque atual do boss 
+        self.phase = 1
         
     def move_towards_player(self, player_x, player_y):
         # Calcula a direção em direção ao jogador
@@ -213,7 +224,7 @@ class Boss(AnimatedEntity):
         # Dispara projéteis em várias direções
         for angle in range(0, 360, 45):  # Exemplo: dispara em 8 direções diferentes
             rad_angle = math.radians(angle)
-            game_manager.spawn_projectile(self.x, self.y, rad_angle, is_special=True)
+            game_manager.spawn_projectile(self.x, self.y, rad_angle, is_special=True, owner="boss")
             
     def draw(self, surface):
         super().draw(surface)
@@ -226,7 +237,7 @@ class Boss(AnimatedEntity):
         if self.lives < self.max_lives / 2 and self.phase == 1:
             self.phase = 2
             # Muda para uma fase mais agressiva
-            self.speed += 1
+            self.speed += 2
         
         # Move o boss em direção ao jogador
         self.move_towards_player(player_x, player_y)
@@ -251,7 +262,7 @@ class ProjectileFactory:
         
 class Projectile:
     # O construtor e o método move() permanecem os mesmos
-    def __init__(self, x, y, angle, size=1, speed=15, radius=5, damage=1):
+    def __init__(self, x, y, angle, size=1, speed=15, radius=5, damage=1, owner ="player"):
         self.x = x
         self.y = y
         self.speed = speed
@@ -259,6 +270,7 @@ class Projectile:
         self.size = size
         self.radius = radius * self.size
         self.damage = damage if size == 1 else damage * 3  # Aumenta o dano se for um projétil especial
+        self.owner = owner
 
     def move(self):
         self.x += self.speed * math.cos(self.angle)
@@ -314,24 +326,19 @@ class GameManager:
         if self.current_score > 5 and self.boss is None:
             self.boss = Boss(screen_width // 2, 100)  # Ajuste a posição de spawn
             
-    def spawn_projectile(self, x, y, angle, is_special):
-        if is_special:
+    def spawn_projectile(self, x, y, angle, is_special, owner=""):
+        # if is_special:
             # Parâmetros para projéteis especiais
-            size = 3  # Tamanho maior para projéteis especiais
-            speed = 20  # Uma velocidade maior para diferenciar
-            radius = 10  # Um raio maior para impacto visual e de colisão
-            damage = 3  # Dano base maior; será triplicado conforme sua lógica no __init__ do Projectile
-        else:
-            # Parâmetros padrão para projéteis normais
-            size = 1
-            speed = 15
-            radius = 5
-            damage = 1
+        # Parâmetros para projéteis especiais
+        size = 3 if is_special else 1
+        speed = 20 if is_special else 15
+        radius = 10 if is_special else 5
+        damage = 3 if is_special else 1 
 
         # Cria o projétil com os parâmetros determinados
-        new_projectile = Projectile(x, y, angle, size, speed, radius, damage)
+        new_projectile = Projectile(x, y, angle, size, speed, radius, damage, owner)
         self.projectiles.append(new_projectile)
-                    
+                        
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -400,24 +407,55 @@ class GameManager:
             pygame.time.Clock().tick(60)
             
     def update(self, keys):
+        # 1. Atualização do jogador
         self.player.move(keys)
         self.player.update_sprites()
         self.player.current_mana = min(self.player.current_mana + self.mana_recharge_rate, self.player.max_mana)
         self.player.mana_bar.update(self.player.current_mana)
+
+        # 2. Tentativa de spawnar o boss
         self.spawn_boss()
-        
+
+        # 3. Atualizar o boss, se ele existir
         if self.boss:
             self.boss.update(self.player.x, self.player.y, self)
+
+        # 4. Checagem de colisão entre o jogador e o boss (aplicar dano ao jogador)
+        if self.boss and pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height).colliderect(pygame.Rect(self.boss.x, self.boss.y, self.boss.width, self.boss.height)):
+            self.player.lose_life(self.boss.damage)
+
+        # 5. Processamento de projéteis do jogador
+        for projectile in self.projectiles[:]:
+            projectile.move()
+            # Remove projéteis que saíram da tela
+            if not (0 <= projectile.x <= screen_width and 0 <= projectile.y <= screen_height):
+                self.projectiles.remove(projectile)
+                continue
+
+            # Checagem de colisão com o boss para projéteis do jogador
+            if projectile.owner == "player" and self.boss:
+                if pygame.Rect(projectile.x - projectile.radius, projectile.y - projectile.radius, projectile.radius * 2, projectile.radius * 2).colliderect(pygame.Rect(self.boss.x, self.boss.y, self.boss.width, self.boss.height)):
+                    self.boss.lives -= projectile.damage
+                    self.projectiles.remove(projectile)
+                    # Verifica se o boss foi derrotado
+                    if self.boss.lives <= 0:
+                        self.boss = None
+
+            # Checagem de colisão com o jogador para projéteis do boss
+            elif projectile.owner == "boss":
+                if pygame.Rect(projectile.x - projectile.radius, projectile.y - projectile.radius, projectile.radius * 2, projectile.radius * 2).colliderect(pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height)):
+                    self.player.lose_life(projectile.damage)  # Aplica o dano corretamente
+                    self.projectiles.remove(projectile)
+                    
         if self.player.current_health <= 0:
             self.game_over = True
             
         for life in self.lives[:]:
             if pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height).colliderect(pygame.Rect(life.x, life.y, life.width, life.height)):
                 self.player.current_health += 1  # Aumenta a saúde do jogador
-                self.player.current_health = min(self.player.current_health, self.player.max_health)  # Não permite que a saúde exceda o máximo
-                self.player.health_bar.update(self.player.current_health)  # Atualiza a barra de saúde
+                self.player.current_health = min(self.player.current_health, self.player.max_health)
                 self.lives.remove(life)
-                    
+                            
         for enemy in self.enemies[:]:
             if pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height).colliderect(pygame.Rect(enemy.x, enemy.y, enemy.width, enemy.height)):
                 self.player.lose_life(enemy.damage)  # O jogador perde vidas com base no dano do inimigo
@@ -428,17 +466,18 @@ class GameManager:
 
         for projectile in self.projectiles[:]:
             projectile.move()
-            if not (0 <= projectile.x <= screen_width and 0 <= projectile.y <= screen_height):
-                self.projectiles.remove(projectile)
-            else:
-                for enemy in self.enemies[:]:
-                    if pygame.Rect(enemy.x, enemy.y, enemy.width, enemy.height).colliderect(pygame.Rect(projectile.x - projectile.radius, projectile.y - projectile.radius, projectile.radius * 2, projectile.radius * 2)):
-                        enemy.lose_life(projectile.damage)  # O inimigo perde uma vida
-                        if not enemy.is_alive():  # Se o inimigo não estiver mais vivo, remova-o
-                            self.current_score += enemy.score_value
-                            self.enemies.remove(enemy)
-                        if projectile in self.projectiles:
-                            self.projectiles.remove(projectile)
+            if projectile.owner == "player":
+                if not (0 <= projectile.x <= screen_width and 0 <= projectile.y <= screen_height):
+                    self.projectiles.remove(projectile)
+                else:
+                    for enemy in self.enemies[:]:
+                        if pygame.Rect(enemy.x, enemy.y, enemy.width, enemy.height).colliderect(pygame.Rect(projectile.x - projectile.radius, projectile.y - projectile.radius, projectile.radius * 2, projectile.radius * 2)):
+                            enemy.lose_life(projectile.damage)  # O inimigo perde uma vida
+                            if not enemy.is_alive():  # Se o inimigo não estiver mais vivo, remova-o
+                                self.current_score += enemy.score_value
+                                self.enemies.remove(enemy)
+                            if projectile in self.projectiles:
+                                self.projectiles.remove(projectile)
 
         self.spawn_enemies()
     
