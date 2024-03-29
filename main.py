@@ -107,7 +107,7 @@ class Player(AnimatedEntity):
         super().__init__(x, y, 50, 50, sprite_paths)  # Ajuste a largura, altura e sprite_paths conforme necessário
         self.speed = 8
         self.lives = 5
-        self.max_health = 10
+        self.max_health = 100
         self.current_health =self.max_health
         self.health_bar = StatusBar(10, 10, 50, 8, (212, 115, 115), self.max_health)  
         self.max_mana = 20
@@ -291,9 +291,9 @@ class Projectile:
         self.size = size
         self.radius = radius * self.size
         self.original_sprite = pygame.image.load("assets/semente.png").convert_alpha()
-        self.original_sprite = pygame.transform.scale(self.original_sprite, (20,20))
+        self.original_sprite = pygame.transform.scale(self.original_sprite, (24,24))
         self.sprite = self.original_sprite
-        self.angle_degrees = -math.degrees(angle)
+        self.angle_degrees = -math.degrees(angle) - 90
         self.damage = damage if size == 1 else damage * 3  # Aumenta o dano se for um projétil especial
         self.owner = owner
 
