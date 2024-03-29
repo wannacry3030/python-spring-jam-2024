@@ -90,6 +90,7 @@ class Player(AnimatedEntity):
         self.max_mana = 20
         self.current_mana = 20
         self.mana_bar = StatusBar(x, y - 20, 50, 8, (115,122,212), self.max_mana)  # Mana
+        self.mana_cost = 10
             
 
     def move(self, keys):
@@ -104,6 +105,20 @@ class Player(AnimatedEntity):
             self.x += self.speed
         self.update_health_bar_position()
         self.update_mana_bar_position()
+
+    def shoot(self, target_x, target_y, is_special=False):
+        if is_special:
+            if self.current_mana >= self.mana_cost:
+                self.current_mana -= self.mana_cost
+                angle = math.atan2(target_y - self.y, target_x - self.x)
+                # Cria um projétil especial maior
+                return Projectile(self.x + self.width / 2, self.y + self.height / 2, angle, size=3)
+            else:
+                return None  # Feedback para o jogador sobre mana insuficiente
+        else:
+            # Disparo normal sem custo de mana
+            angle = math.atan2(target_y - self.y, target_x - self.x)
+            return Projectile(self.x + self.width / 2, self.y + self.height / 2, angle)
             
     def update_health_bar_position(self):
         self.health_bar.x = self.x
@@ -149,7 +164,7 @@ class Enemy(AnimatedEntity):
         self.y += self.speed * math.sin(angle)
     def draw(self, surface):
         surface.blit(self.sprites[self.current_sprite], (self.x, self.y))
-    def lose_life(self):
+    def lose_life(self,damage):
         self.lives -= 1
     def is_alive(self):
         return self.lives > 0
@@ -168,19 +183,34 @@ class WhiteEnemy(Enemy):
         self.lives = 1
         self.score_value = 1
 
+class ProjectileFactory:
+    @staticmethod
+    def create_projectile(type, x, y, target_x, target_y, player_mana):
+        angle = math.atan2(target_y - y, target_x - x)
+        if type == "normal":
+            return Projectile(x, y, angle)
+        elif type == "special":
+            if player_mana >= 10:  # Supondo 10 como o custo de mana para um projétil especial
+                return Projectile(x, y, angle, size=3, speed=20, radius=15, damage=3)
+        # Adicionar mais condições para diferentes tipos de projéteis
+        return None
+
         
 class Projectile:
     # O construtor e o método move() permanecem os mesmos
-    def __init__(self, x, y, angle):
+    def __init__(self, x, y, angle, size=1, speed=15, radius=5, damage=1):
         self.x = x
         self.y = y
-        self.speed = 15
+        self.speed = speed
         self.angle = angle
-        self.radius = 10
+        self.size = size
+        self.radius = radius * self.size
+        self.damage = damage if size == 1 else damage * 3  # Aumenta o dano se for um projétil especial
 
     def move(self):
         self.x += self.speed * math.cos(self.angle)
         self.y += self.speed * math.sin(self.angle)
+        
     def draw(self, surface):
         pygame.draw.circle(surface, WHITE, (int(self.x), int(self.y)), self.radius)
 
@@ -189,6 +219,7 @@ class GameManager:
         self.reset_game()
         self.current_score = 0
         self.high_score = self.load_high_score()
+        self.mana_recharge_rate = 1
         
     def reset_game(self):
         self.game_over = False
@@ -237,9 +268,12 @@ class GameManager:
                     self.reset_game()  # Reinicia o jogo.
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_x, mouse_y = pygame.mouse.get_pos()
-                angle = math.atan2(mouse_y - self.player.y, mouse_x - self.player.x)
-                projectile = Projectile(self.player.x + self.player.width / 2, self.player.y + self.player.height / 2, angle)
-                self.projectiles.append(projectile)
+                if event.button == 1:  # Botão esquerdo
+                    projectile = self.player.shoot(mouse_x, mouse_y)
+                elif event.button == 3:  # Botão direito
+                    projectile = self.player.shoot(mouse_x, mouse_y, is_special=True)
+                if projectile:
+                    self.projectiles.append(projectile)
    
     def spawn_enemies(self):
         # O código permanece o mesmo
@@ -291,6 +325,8 @@ class GameManager:
     def update(self, keys):
         self.player.move(keys)
         self.player.update_sprites()
+        self.player.current_mana = min(self.player.current_mana + self.mana_recharge_rate, self.player.max_mana)
+        self.player.mana_bar.update(self.player.current_mana)
         
         # if not self.player.is_alive():
         #     self.game_over = True
@@ -320,7 +356,7 @@ class GameManager:
             else:
                 for enemy in self.enemies[:]:
                     if pygame.Rect(enemy.x, enemy.y, enemy.width, enemy.height).colliderect(pygame.Rect(projectile.x - projectile.radius, projectile.y - projectile.radius, projectile.radius * 2, projectile.radius * 2)):
-                        enemy.lose_life()  # O inimigo perde uma vida
+                        enemy.lose_life(projectile.damage)  # O inimigo perde uma vida
                         if not enemy.is_alive():  # Se o inimigo não estiver mais vivo, remova-o
                             self.current_score += enemy.score_value
                             self.enemies.remove(enemy)
