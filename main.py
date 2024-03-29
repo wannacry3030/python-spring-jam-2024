@@ -130,18 +130,16 @@ class Player(AnimatedEntity):
         self.update_mana_bar_position()
 
     def shoot(self, target_x, target_y, is_special=False):
+        angle = math.atan2(target_y - self.y, target_x - self.x)
         if is_special:
             if self.current_mana >= self.mana_cost:
                 self.current_mana -= self.mana_cost
-                angle = math.atan2(target_y - self.y, target_x - self.x)
-                # Cria um projétil especial maior
-                return Projectile(self.x + self.width / 2, self.y + self.height / 2, angle, size=3)
-            else:
-                return None  # Feedback para o jogador sobre mana insuficiente
+                # Cria um projétil especial com rotação
+                return Projectile(self.x + self.width / 2, self.y + self.height / 2, angle, size=3, is_special=True)
         else:
-            # Disparo normal sem custo de mana
-            angle = math.atan2(target_y - self.y, target_x - self.x)
+            # Cria um projétil normal com rotação
             return Projectile(self.x + self.width / 2, self.y + self.height / 2, angle)
+
             
     def update_health_bar_position(self):
         self.health_bar.x = self.x
@@ -283,7 +281,7 @@ class ProjectileFactory:
         
 class Projectile:
     # O construtor e o método move() permanecem os mesmos
-    def __init__(self, x, y, angle, size=1, speed=15, radius=5, damage=1, owner ="player"):
+    def __init__(self, x, y, angle, size=1, speed=15, radius=5, damage=1, owner ="player", is_special=False):
         self.x = x
         self.y = y
         self.speed = speed
@@ -296,6 +294,20 @@ class Projectile:
         self.angle_degrees = -math.degrees(angle) - 90
         self.damage = damage if size == 1 else damage * 3  # Aumenta o dano se for um projétil especial
         self.owner = owner
+        
+        if owner == "player" and not is_special:
+            self.original_sprite = pygame.image.load("assets/semente.png").convert_alpha()
+            self.original_sprite = pygame.transform.scale(self.original_sprite, (24,24))
+        elif owner == "player" and is_special:
+            # Defina aqui a sprite para o projétil especial se necessário
+            self.original_sprite = pygame.image.load("assets/bossT.png").convert_alpha()
+            self.original_sprite = pygame.transform.scale(self.original_sprite, (48,48))  # Tamanho maior para projéteis especiais
+        else:
+            # Sprite padrão para projéteis do boss, se necessário
+            self.original_sprite = pygame.image.load("assets/bossT.png").convert_alpha()
+            self.original_sprite = pygame.transform.scale(self.original_sprite, (50,50))
+        self.sprite = self.original_sprite
+        self.angle_degrees = -math.degrees(angle) - 90
 
     def move(self):
         self.x += self.speed * math.cos(self.angle)
