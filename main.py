@@ -8,8 +8,9 @@ import time
 pygame.init()
 
 # Configurações da tela
+
 screen_width, screen_height = 1500, 750
-screen = pygame.display.set_mode((screen_width, screen_height))
+screen = pygame.display.set_mode((screen_width, screen_height), pygame.DOUBLEBUF)
 pygame.display.set_caption("teste 1")
 game_over_img  = 'assets/gameover.png'
 start_screen_image = 'assets/tela.png'
@@ -37,6 +38,7 @@ class AnimatedEntity:
         self.sprites = [pygame.transform.scale(pygame.image.load(path), (width, height)) for path in sprite_paths]
         self.current_sprite = 0
         self.last_update = pygame.time.get_ticks()
+        
 
     def update_sprites(self):
         now = pygame.time.get_ticks()
@@ -121,31 +123,18 @@ class Player(AnimatedEntity):
         self.dash_start_time = 0
         
     def start_dash(self):
-        print("Iniciando tentativa de dash")
         current_time = pygame.time.get_ticks()
-        print(f"current_time: {current_time}, last_dash_time: {self.last_dash_time}, dash_cooldown: {self.dash_cooldown}")
-        print(f"Mana: {self.current_mana}, Custo do Dash: {self.mana_cost_for_dash}")
-        print(f"is_dashing: {self.is_dashing}")
-
         if current_time - self.last_dash_time >= self.dash_cooldown:
             if self.current_mana >= self.mana_cost_for_dash:
                 if not self.is_dashing:
-                    print("Dash ativado")
                     self.is_dashing = True
                     self.dash_start_time = current_time
                     self.last_dash_time = current_time
                     self.current_mana -= self.mana_cost_for_dash
-                else:
-                    print("Falha: já está realizando um dash.")
-            else:
-                print("Falha: mana insuficiente.")
-        else:
-            print("Falha: cooldown ainda não expirou.")
 
     def move(self, keys):
         current_time =  pygame.time.get_ticks()
         if self.is_dashing:
-            print("dashing at : ", self.dash_speed)
             speed = self.dash_speed
             if current_time - self.dash_start_time > self.dash_duration:
                 self.is_dashing = False
@@ -303,7 +292,6 @@ class Boss(AnimatedEntity):
         # Dispara projéteis em várias direções
         current_time = pygame.time.get_ticks()
         if current_time - self.last_attack_time >= self.attack_cooldown:
-            # print("Atacando: criando projéteis")
             for angle in range(0, 360, 45):  # Exemplo: dispara em 8 direções diferentes
                 rad_angle = math.radians(angle)
                 game_manager.spawn_projectile(self.x, self.y, rad_angle, is_special=True, owner="boss")
@@ -386,6 +374,9 @@ class GameManager:
         self.high_score = self.load_high_score()
         self.mana_recharge_rate = 0.08
         self.damage_indicators = []  
+        pygame.mouse.set_visible(False)
+        self.animated_cursor = AnimatedEntity(0, 0, 50, 50, [f'assets/mira{i}.png' for i in range(1,5)], 0.5)
+
 
         self.font = pygame.font.Font(None, 36)
         
@@ -431,10 +422,6 @@ class GameManager:
             self.boss = Boss(screen_width // 2, 100)  # Ajuste a posição de spawn
             
     def spawn_projectile(self, x, y, angle, is_special, owner=""):
-        # if is_special:
-            # Parâmetros para projéteis especiais
-        # Parâmetros para projéteis especiais
-        # print(f"Criando projétil de {owner} em x:{x}, y:{y}")
         size = 3 if is_special else 1
         speed = 20 if is_special else 15
         radius = 10 if is_special else 5
@@ -455,7 +442,6 @@ class GameManager:
                 elif event.key == pygame.K_SPACE:
                     self.reset_game() 
                 elif event.key == pygame.K_e:
-                    print("E")
                     self.player.start_dash()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -532,6 +518,12 @@ class GameManager:
         self.player.update_sprites()
         self.player.current_mana = min(self.player.current_mana + self.mana_recharge_rate, self.player.max_mana)
         self.player.mana_bar.update(self.player.current_mana)
+        
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        self.animated_cursor.x = mouse_x
+        self.animated_cursor.y = mouse_y
+        self.animated_cursor.update_sprites()
+
 
         # 2. Tentativa de spawnar o boss
         self.spawn_boss()
@@ -566,7 +558,6 @@ class GameManager:
             # Checagem de colisão com o jogador para projéteis do boss
             elif projectile.owner == "boss":
                 if pygame.Rect(projectile.x - projectile.radius, projectile.y - projectile.radius, projectile.radius * 2, projectile.radius * 2).colliderect(pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height)):
-                    print(f"Creating damage indicator for {projectile.damage} damage")
                     damage_indicator = DamageIndicator(projectile.x, projectile.y, projectile.damage, self.font)
                     self.damage_indicators.append(damage_indicator)
                     self.player.lose_life(projectile.damage)  # Aplica o dano corretamente
@@ -655,6 +646,8 @@ class GameManager:
         high_score_text = font.render(f"High Score: {self.high_score}", True, WHITE)
         surface.blit(high_score_text, (screen_width - 180, 30))  # Ajuste a posição conforme necessário
         pygame.display.flip()    
+        self.animated_cursor.draw(surface)
+
         
     def show_game_over_screen(self):
         screen.blit(game_over_surface, (0, 0))  # Ajuste a posição conforme necessário
