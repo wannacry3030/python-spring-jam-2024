@@ -233,6 +233,8 @@ class AnimatedLife(AnimatedEntity):
         sprite_paths = ['assets/sol1.png', 'assets/sol2.png']  # Adicione os caminhos para suas imagens de coração aqui
         super().__init__(x, y, 50, 50, sprite_paths, animation_time=0.3)  # Ajuste animation_time para controlar a velocidade da animação
 
+
+
 class Enemy(AnimatedEntity):
     def __init__(self, x, y, width, height, sprite_paths, speed, damage):
         super().__init__(x, y, width, height, sprite_paths)
@@ -650,6 +652,8 @@ class GameManager:
                                 self.enemies.remove(enemy)
                             if projectile in self.projectiles:
                                 self.projectiles.remove(projectile)
+                            if random.random() < 0.3:
+                                self.mana_orbs.append(ManaOrb(enemy.x,enemy.y))
         
      
 
