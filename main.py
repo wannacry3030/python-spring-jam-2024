@@ -199,23 +199,24 @@ class Enemy(AnimatedEntity):
 class RedEnemy(Enemy):
     def __init__(self, x, y):
         sprite_paths = [f'assets/enemy{i}.png' for i in range(1, 3)]
-        super().__init__(x, y, 100, 100, sprite_paths, speed=3, damage=2)
+        super().__init__(x, y, 100, 100, sprite_paths, speed=2, damage=2)
         self.lives = 3
         self.score_value = 2
 
 class WhiteEnemy(Enemy):
     def __init__(self, x, y):
         sprite_paths = [f'assets/enemy{i}.png' for i in range(1, 3)]
-        super().__init__(x, y, 60, 60, sprite_paths, speed=2, damage=1)
+        super().__init__(x, y, 60, 60, sprite_paths, speed=1, damage=1)
         self.lives = 1
         self.score_value = 1
 
 class ShootingEnemy(Enemy):
     def __init__(self, x, y):
-        super().__init__(x, y, 60, 60, [f'assets/flower{i}.png' for i in range(1, 3)], speed=2, damage=1)
-        self.shoot_cooldown = 1000  # Cooldown de 2000 ms (2 segundos) entre tiros
+        super().__init__(x, y, 60, 60, [f'assets/flower{i}.png' for i in range(1, 3)], speed=1, damage=1)
+        self.shoot_cooldown = 2000  # Cooldown de 2000 ms (2 segundos) entre tiros
         self.last_shot_time = pygame.time.get_ticks()
         self.score_value = 2
+        self.lives = 5
 
     def attempt_to_shoot(self, game_manager):
         current_time = pygame.time.get_ticks()
@@ -281,7 +282,7 @@ class Boss(AnimatedEntity):
         if self.lives < self.max_lives / 2 and self.phase == 1:
             self.phase = 2
             # Muda para uma fase mais agressiva
-            self.speed += 4
+            self.speed += 2
             
         
         # Move o boss em direção ao jogador
@@ -319,7 +320,6 @@ class Projectile:
             self.original_sprite = pygame.image.load("assets/semente.png").convert_alpha()
             self.original_sprite = pygame.transform.scale(self.original_sprite, (24,24))
         elif owner == "player" and is_special:
-            # Defina aqui a sprite para o projétil especial se necessário
             self.original_sprite = pygame.image.load("assets/bossT.png").convert_alpha()
             self.original_sprite = pygame.transform.scale(self.original_sprite, (48,48))  # Tamanho maior para projéteis especiais
         else:
@@ -336,7 +336,6 @@ class Projectile:
     def draw(self, surface):
         # Rotaciona o sprite baseado no ângulo do tiro cada vez antes de desenhar
         self.sprite = pygame.transform.rotate(self.original_sprite, self.angle_degrees)
-        # Calcula o novo rect do sprite para manter o posicionamento correto
         rect = self.sprite.get_rect(center=(self.x, self.y))
         surface.blit(self.sprite, rect.topleft)
         
@@ -387,10 +386,9 @@ class GameManager:
             self.lives.append(AnimatedLife(random.randint(0, screen_width - 30), random.randint(0, screen_height - 30)))
             self.last_life_spawn = current_time
 
- 
     def spawn_boss(self):
         # Condição para spawnar o boss, por exemplo, alcançar um certo score
-        if self.current_score > 5 and self.boss is None and not self.boss_defeated:
+        if self.current_score > 100 and self.boss is None and not self.boss_defeated:
             self.boss = Boss(screen_width // 2, 100)  # Ajuste a posição de spawn
             
     def spawn_projectile(self, x, y, angle, is_special, owner=""):
