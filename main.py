@@ -119,10 +119,13 @@ class Player(AnimatedEntity):
         self.dash_speed = 30
         self.mana_cost_for_dash = 10
         self.dash_duration = 200 # milissegundos
-        self.dash_cooldown = 2000# 10 segundos
+        self.dash_cooldown = 3000# 10 segundos
         self.last_dash_time = 0
         self.is_dashing = False
         self.dash_start_time = 0
+#atributos special shot --------------------------------------------------------------------_--#
+        self.special_shot_cooldown = 3000 # miliseg
+        self.last_special_shot_time = 0
         
         self.dash_icon = pygame.transform.scale(pygame.image.load('assets/icone.png').convert_alpha(), (64, 64))
         self.special_shot_icon = pygame.transform.scale(pygame.image.load('assets/icone.png').convert_alpha(), (64, 64))
@@ -153,6 +156,12 @@ class Player(AnimatedEntity):
                 if cooldown_ratio < 1:
                     cooldown_height = icon.get_height() * (1 - cooldown_ratio)
                     pygame.draw.rect(surface, (0, 0, 0, 127), (x, y + icon.get_height() - cooldown_height, icon.get_width(), cooldown_height))
+        # Para o projétil especial, desenha o overlay de cooldown se necessário
+            if icons[index] == self.special_shot_icon:
+                cooldown_ratio = max(0, min((pygame.time.get_ticks() - self.last_special_shot_time) / self.special_shot_cooldown, 1))
+                if cooldown_ratio < 1:
+                    cooldown_height = icons[index].get_height() * (1 - cooldown_ratio)
+                    pygame.draw.rect(surface, (0, 0, 0, 127), (x, y + icons[index].get_height() - cooldown_height, icons[index].get_width(), cooldown_height))
 
 
     def move(self, keys):
@@ -179,15 +188,22 @@ class Player(AnimatedEntity):
         self.y = max(0, min(screen_height - self.height, self.y))
 
     def shoot(self, target_x, target_y, is_special=False):
+        current_time = pygame.time.get_ticks()
         angle = math.atan2(target_y - self.y, target_x - self.x)
+
         if is_special:
-            if self.current_mana >= self.mana_cost:
-                self.current_mana -= self.mana_cost
-                # Cria um projétil especial com rotação
-                return Projectile(self.x + self.width / 2, self.y + self.height / 2, angle, size=3, is_special=True)
+            # Verifica se o cooldown do tiro especial foi respeitado
+            if current_time - self.last_special_shot_time >= self.special_shot_cooldown:
+                if self.current_mana >= self.mana_cost:
+                    self.current_mana -= self.mana_cost
+                    self.last_special_shot_time = current_time  # Atualiza o tempo do último tiro especial
+                    # Cria e retorna um projétil especial com rotação
+                    return Projectile(self.x + self.width / 2, self.y + self.height / 2, angle, size=3, is_special=True)
         else:
-            # Cria um projétil normal com rotação
+            # Cria e retorna um projétil normal com rotação
             return Projectile(self.x + self.width / 2, self.y + self.height / 2, angle)
+        return None  # Retorna None se o tiro especial estiver em cooldown
+
 
             
     def update_health_bar_position(self):
