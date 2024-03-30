@@ -375,7 +375,7 @@ class GameManager:
         self.mana_recharge_rate = 0.08
         self.damage_indicators = []  
         pygame.mouse.set_visible(False)
-        self.animated_cursor = AnimatedEntity(0, 0, 50, 50, [f'assets/mira{i}.png' for i in range(1,5)], 0.5)
+        self.animated_cursor = AnimatedEntity(0, 0, 60, 60, [f'assets/mira{i}.png' for i in range(1,5)], 0.5)
 
 
         self.font = pygame.font.Font(None, 36)
@@ -445,13 +445,20 @@ class GameManager:
                     self.player.start_dash()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_x, mouse_y = pygame.mouse.get_pos()
-                if event.button == 1:  # Botão esqeuerdo
-                    projectile = self.player.shoot(mouse_x, mouse_y)
+                # Ajusta para o centro do cursor
+                adjusted_x = mouse_x - self.animated_cursor.width / 2
+                adjusted_y = mouse_y - self.animated_cursor.height / 2
+                if event.button == 1:  # Botão esquerdo
+                    projectile = self.player.shoot(adjusted_x, adjusted_y)
                 elif event.button == 3:  # Botão direito
-                    projectile = self.player.shoot(mouse_x, mouse_y, is_special=True)
+                    projectile = self.player.shoot(adjusted_x, adjusted_y, is_special=True)
                 if projectile:
                     self.projectiles.append(projectile)
 
+                    
+    def shoot(self, x, y):
+        # Código para criar e adicionar um novo tiro na posição (x, y)
+        pass
    
     def spawn_enemies(self):
         # O código permanece o mesmo
@@ -646,7 +653,11 @@ class GameManager:
         high_score_text = font.render(f"High Score: {self.high_score}", True, WHITE)
         surface.blit(high_score_text, (screen_width - 180, 30))  # Ajuste a posição conforme necessário
         pygame.display.flip()    
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        self.animated_cursor.x = mouse_x - self.animated_cursor.width / 2
+        self.animated_cursor.y = mouse_y - self.animated_cursor.height / 2
         self.animated_cursor.draw(surface)
+        # self.animated_cursor.draw(surface)
 
         
     def show_game_over_screen(self):
