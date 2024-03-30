@@ -4,8 +4,6 @@ import math
 import random
 import time
 
-# TEM ALGUM B.O NO PROJETIL DO BOSS, ELE DA 9 DE DANO INFINITAS VEZES, PARECE Q TEM MAIS DE 1 PROJETIL DENTRO DO PROJETIL, TIPO CAMADAS -----------------------------------------------------------------------------------
-
 # Inicialização do Pygame
 pygame.init()
 
@@ -200,17 +198,40 @@ class Enemy(AnimatedEntity):
 
 class RedEnemy(Enemy):
     def __init__(self, x, y):
-        sprite_paths = [f'assets/enemy{i}.png' for i in range(1)]
+        sprite_paths = [f'assets/enemy{i}.png' for i in range(1, 3)]
         super().__init__(x, y, 100, 100, sprite_paths, speed=3, damage=2)
         self.lives = 3
         self.score_value = 2
 
 class WhiteEnemy(Enemy):
     def __init__(self, x, y):
-        sprite_paths = [f'assets/enemy{i}.png' for i in range(1,2)]
+        sprite_paths = [f'assets/enemy{i}.png' for i in range(1, 3)]
         super().__init__(x, y, 60, 60, sprite_paths, speed=2, damage=1)
         self.lives = 1
         self.score_value = 1
+
+class ShootingEnemy(Enemy):
+    def __init__(self, x, y):
+        super().__init__(x, y, 60, 60, [f'assets/flower{i}.png' for i in range(1, 3)], speed=2, damage=1)
+        self.shoot_cooldown = 1000  # Cooldown de 2000 ms (2 segundos) entre tiros
+        self.last_shot_time = pygame.time.get_ticks()
+        self.score_value = 2
+
+    def attempt_to_shoot(self, game_manager):
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_shot_time >= self.shoot_cooldown:
+            self.last_shot_time = current_time
+            # Calcula a direção do tiro em relação ao jogador
+            dx = game_manager.player.x - self.x
+            dy = game_manager.player.y - self.y
+            angle = math.atan2(dy, dx)
+            # Adiciona o projétil à lista de projéteis do jogo
+            game_manager.spawn_projectile(self.x + self.width / 2, self.y + self.height / 2, angle, False, owner="enemy")
+
+    def update(self, player_x, player_y, game_manager):
+        super().move_towards_player(player_x, player_y)
+        self.attempt_to_shoot(game_manager)
+
 
 class Boss(AnimatedEntity):
     def __init__(self, x, y):
@@ -382,7 +403,6 @@ class GameManager:
         radius = 10 if is_special else 5
         damage = 3 if is_special else 1 
 
-        # Cria o projétil com os parâmetros determinados
         new_projectile = Projectile(x, y, angle, size, speed, radius, damage, owner)
         self.projectiles.append(new_projectile)
                         
@@ -408,11 +428,14 @@ class GameManager:
    
     def spawn_enemies(self):
         # O código permanece o mesmo
-        if len(self.enemies) < 5 and random.randint(0, 60) == 0:
+        if len(self.enemies) < 8 and random.randint(0, 60) == 0:
             enemy = WhiteEnemy(random.randint(0, screen_width - 50), random.randint(0, screen_height - 50))
             self.enemies.append(enemy)
-        if len(self.enemies) < 5 and random.randint(0, 120) == 0:
+        if len(self.enemies) < 8 and random.randint(0, 120) == 0:
             enemy = RedEnemy(random.randint(0, screen_width - 50), random.randint(0, screen_height - 50))
+            self.enemies.append(enemy)
+        if len(self.enemies) < 10 and random.randint(0,1000) < 5:  # Chance de 10% a cada tick
+            enemy = ShootingEnemy(random.randint(0, screen_width - 60), random.randint(0, screen_height - 60))
             self.enemies.append(enemy)
             
     def apply_knock_back(self, enemy, intensity=70):
@@ -482,9 +505,10 @@ class GameManager:
             # Checagem de colisão com o boss para projéteis do jogador
             if projectile.owner == "player" and self.boss:
                 if pygame.Rect(projectile.x - projectile.radius, projectile.y - projectile.radius, projectile.radius * 2, projectile.radius * 2).colliderect(pygame.Rect(self.boss.x, self.boss.y, self.boss.width, self.boss.height)):
+                    damage_indicator = DamageIndicator(projectile.x, projectile.y, projectile.damage, self.font)
+                    self.damage_indicators.append(damage_indicator)
                     self.boss.lives -= projectile.damage
                     self.projectiles.remove(projectile)
-                    # Verifica se o boss foi derrotado
                     if self.boss.lives <= 0:
                         self.boss = None
                         self.boss_defeated = True
@@ -497,16 +521,23 @@ class GameManager:
                     self.damage_indicators.append(damage_indicator)
                     self.player.lose_life(projectile.damage)  # Aplica o dano corretamente
                     self.projectiles.remove(projectile)
+            # checagem de colisao com o jogador dos projeteis do enemy       
+            elif projectile.owner == "enemy":
+                if pygame.Rect(projectile.x - projectile.radius, projectile.y - projectile.radius, projectile.radius * 2, projectile.radius * 2).colliderect(pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height)):
+                    damage_indicator = DamageIndicator(projectile.x, projectile.y, projectile.damage, self.font)
+                    self.damage_indicators.append(damage_indicator)
+                    self.damage_indicators.append(damage_indicator)
+                    self.player.lose_life(projectile.damage)  # Aplica o dano corretamente
+                    self.projectiles.remove(projectile)
+                
                     
         if self.player.current_health <= 0:
             self.game_over = True
             
-        for life in self.lives[:]:  # Use uma cópia da lista para iterar se você está removendo itens dela
+        for life in self.lives[:]: 
             if pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height).colliderect(pygame.Rect(life.x, life.y, life.width, life.height)):
-                # print("Saúde antes: ", self.player.current_health)
-                self.player.current_health += 1  # Aumenta a saúde do jogador
-                # print("Saúde depois: ", self.player.current_health)
-                self.player.current_health = min(self.player.current_health, self.player.max_health)  # Não permite que a saúde exceda o máximo
+                self.player.current_health += 1  
+                self.player.current_health = min(self.player.current_health, self.player.max_health)
                 self.player.health_bar.update(self.player.current_health)
                 self.lives.remove(life) 
                             
@@ -552,6 +583,14 @@ class GameManager:
             projectile.draw(screen)
         for enemy in self.enemies:
             enemy.draw(screen)
+            enemy.update_sprites()
+            
+        for enemy in self.enemies:
+            if isinstance(enemy, ShootingEnemy):
+                enemy.update(self.player.x, self.player.y, self)
+            else:
+                enemy.move_towards_player(self.player.x, self.player.y)
+                    
         for life in self.lives:
             life.draw(screen)
             life.update_sprites()
