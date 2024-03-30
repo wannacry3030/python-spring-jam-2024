@@ -101,8 +101,8 @@ class DamageIndicator:
 class Player(AnimatedEntity):
     def __init__(self, x, y):
         sprite_paths = [f'assets/flower{i}.png' for i in range(1, 3)]
-        super().__init__(x, y, 50, 50, sprite_paths)  # Ajuste a largura, altura e sprite_paths conforme necessário
-        self.speed = 8
+        super().__init__(x, y, 50, 50, sprite_paths)
+        self.speed = 7
         self.lives = 5
         self.max_health = 100
         self.current_health =self.max_health
@@ -111,20 +111,60 @@ class Player(AnimatedEntity):
         self.current_mana = 20
         self.mana_bar = StatusBar(x, y - 20, 50, 8, (115,122,212), self.max_mana)  # Mana
         self.mana_cost = 10
+#atributos do dash ----------------------------------------------------------------------------#
+        self.dash_speed = 30
+        self.mana_cost_for_dash = 10
+        self.dash_duration = 200 # milissegundos
+        self.dash_cooldown = 2000# 10 segundos
+        self.last_dash_time = 0
+        self.is_dashing = False
+        self.dash_start_time = 0
+        
+    def start_dash(self):
+        print("Iniciando tentativa de dash")
+        current_time = pygame.time.get_ticks()
+        print(f"current_time: {current_time}, last_dash_time: {self.last_dash_time}, dash_cooldown: {self.dash_cooldown}")
+        print(f"Mana: {self.current_mana}, Custo do Dash: {self.mana_cost_for_dash}")
+        print(f"is_dashing: {self.is_dashing}")
 
+        if current_time - self.last_dash_time >= self.dash_cooldown:
+            if self.current_mana >= self.mana_cost_for_dash:
+                if not self.is_dashing:
+                    print("Dash ativado")
+                    self.is_dashing = True
+                    self.dash_start_time = current_time
+                    self.last_dash_time = current_time
+                    self.current_mana -= self.mana_cost_for_dash
+                else:
+                    print("Falha: já está realizando um dash.")
+            else:
+                print("Falha: mana insuficiente.")
+        else:
+            print("Falha: cooldown ainda não expirou.")
 
     def move(self, keys):
-        # Mover o jogador e garantir que ele não saia da tela
+        current_time =  pygame.time.get_ticks()
+        if self.is_dashing:
+            print("dashing at : ", self.dash_speed)
+            speed = self.dash_speed
+            if current_time - self.dash_start_time > self.dash_duration:
+                self.is_dashing = False
+        else:
+            speed = self.speed
+        
         if keys[pygame.K_w] and self.y > 0:
-            self.y -= self.speed
+            self.y -= speed
         if keys[pygame.K_s] and self.y < screen_height - self.height:
-            self.y += self.speed
+            self.y += speed
         if keys[pygame.K_a] and self.x > 0:
-            self.x -= self.speed
+            self.x -= speed
         if keys[pygame.K_d] and self.x < screen_width - self.width:
-            self.x += self.speed
+            self.x += speed
+            
         self.update_health_bar_position()
         self.update_mana_bar_position()
+        self.x = max(0, min(screen_width - self.width, self.x))
+        self.y = max(0, min(screen_height - self.height, self.y))
 
     def shoot(self, target_x, target_y, is_special=False):
         angle = math.atan2(target_y - self.y, target_x - self.x)
@@ -232,7 +272,6 @@ class ShootingEnemy(Enemy):
     def update(self, player_x, player_y, game_manager):
         super().move_towards_player(player_x, player_y)
         self.attempt_to_shoot(game_manager)
-
 
 class Boss(AnimatedEntity):
     def __init__(self, x, y):
@@ -414,15 +453,19 @@ class GameManager:
                     pygame.quit()
                     sys.exit()
                 elif event.key == pygame.K_SPACE:
-                    self.reset_game()  # Reinicia o jogo.
+                    self.reset_game() 
+                elif event.key == pygame.K_e:
+                    print("E")
+                    self.player.start_dash()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_x, mouse_y = pygame.mouse.get_pos()
-                if event.button == 1:  # Botão esquerdo
+                if event.button == 1:  # Botão esqeuerdo
                     projectile = self.player.shoot(mouse_x, mouse_y)
                 elif event.button == 3:  # Botão direito
                     projectile = self.player.shoot(mouse_x, mouse_y, is_special=True)
                 if projectile:
                     self.projectiles.append(projectile)
+
    
     def spawn_enemies(self):
         # O código permanece o mesmo
