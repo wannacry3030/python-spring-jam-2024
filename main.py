@@ -7,6 +7,7 @@ import time
 # Inicialização do Pygame
 pygame.init()
 
+
 # Configurações da tela
 
 screen_width, screen_height = 1500, 750
@@ -191,17 +192,6 @@ class AnimatedLife(AnimatedEntity):
     def __init__(self, x, y):
         sprite_paths = ['assets/sol1.png', 'assets/sol2.png']  # Adicione os caminhos para suas imagens de coração aqui
         super().__init__(x, y, 50, 50, sprite_paths, animation_time=0.3)  # Ajuste animation_time para controlar a velocidade da animação
-
-                
-# class Life:
-#     def __init__(self):
-#         self.width = 30
-#         self.height = 30
-        # self.x = random.randint(0, screen_width - self.width)
-        # self.y = random.randint(0, screen_height - self.height)
-
-    # def draw(self, surface):
-    #     pygame.draw.rect(surface, PINK, (self.x, self.y, self.width, self.height))
 
 class Enemy(AnimatedEntity):
     def __init__(self, x, y, width, height, sprite_paths, speed, damage):
