@@ -19,6 +19,7 @@ fundo_image = 'assets/fundo.png'
 fundo_surface = pygame.image.load(fundo_image).convert_alpha()
 start_screen_surface = pygame.image.load(start_screen_image)
 game_over_surface = pygame.image.load(game_over_img)
+fundo_surface = pygame.transform.scale(fundo_surface,(screen_width,screen_height))
 
 # Cores
 WHITE = (255, 255, 255)
