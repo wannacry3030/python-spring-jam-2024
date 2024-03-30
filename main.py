@@ -8,7 +8,7 @@ import time
 pygame.init()
 
 # Configurações da tela
-screen_width, screen_height = 1500, 800
+screen_width, screen_height = 1500, 750
 screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption("teste 1")
 game_over_img  = 'assets/gameover.png'
@@ -100,7 +100,7 @@ class DamageIndicator:
 
 class Player(AnimatedEntity):
     def __init__(self, x, y):
-        sprite_paths = [f'assets/flower{i}.png' for i in range(1)]
+        sprite_paths = [f'assets/flower{i}.png' for i in range(7)]
         super().__init__(x, y, 100, 100, sprite_paths)
         self.speed = 7
         self.lives = 5
@@ -252,7 +252,7 @@ class WhiteEnemy(Enemy):
 
 class ShootingEnemy(Enemy):
     def __init__(self, x, y):
-        super().__init__(x, y, 60, 60, [f'assets/flower{i}.png' for i in range(1, 3)], speed=1, damage=1)
+        super().__init__(x, y, 60, 60, [f'assets/e{i}.png' for i in range(1, 3)], speed=1, damage=1)
         self.shoot_cooldown = 2000  # Cooldown de 2000 ms (2 segundos) entre tiros
         self.last_shot_time = pygame.time.get_ticks()
         self.score_value = 2
@@ -469,13 +469,13 @@ class GameManager:
    
     def spawn_enemies(self):
         # O código permanece o mesmo
-        if len(self.enemies) < 8 and random.randint(0, 60) == 0:
+        if len(self.enemies) < 5 and random.randint(0, 60) == 0:
             enemy = WhiteEnemy(random.randint(0, screen_width - 50), random.randint(0, screen_height - 50))
             self.enemies.append(enemy)
-        if len(self.enemies) < 8 and random.randint(0, 120) == 0:
+        if len(self.enemies) < 5 and random.randint(0, 120) == 0:
             enemy = RedEnemy(random.randint(0, screen_width - 50), random.randint(0, screen_height - 50))
             self.enemies.append(enemy)
-        if len(self.enemies) < 10 and random.randint(0,1000) < 5:  # Chance de 10% a cada tick
+        if len(self.enemies) < 5 and random.randint(0,1000) < 5:  # Chance de 10% a cada tick
             enemy = ShootingEnemy(random.randint(0, screen_width - 60), random.randint(0, screen_height - 60))
             self.enemies.append(enemy)
             
@@ -497,6 +497,7 @@ class GameManager:
         enemy.y = max(0, min(screen_height - enemy.height, new_y))
         
     def run(self):
+        clock = pygame.time.Clock()
         draw_start_screen()  # Mostra a tela de início
         waiting_for_input = True
         while waiting_for_input:
@@ -515,6 +516,14 @@ class GameManager:
                 self.spawn_lives()
                 self.update(keys)
                 self.draw(screen)
+                
+                #fps
+                fps = clock.get_fps()
+                fps_text = font.render(f"FPS: {fps:.2f}", True, pygame.Color('white'))
+                screen.blit(fps_text, (10,5))
+                pygame.display.flip()
+                clock.tick(60)
+                
             pygame.time.Clock().tick(60)
             
     def update(self, keys):
