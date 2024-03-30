@@ -49,6 +49,7 @@ class AnimatedEntity:
     
     def draw(self, surface):
         surface.blit(self.sprites[self.current_sprite], (self.x, self.y))
+        
 
 class StatusBar:
     def __init__(self, x, y, width, height, color, max_value):
@@ -107,7 +108,7 @@ class Player(AnimatedEntity):
         super().__init__(x, y, 100, 100, sprite_paths)
         self.speed = 7
         self.lives = 5
-        self.max_health = 20
+        self.max_health = 200
         self.current_health =self.max_health
         self.health_bar = StatusBar(10, 10, 50, 8, (251,242,54), self.max_health)  
         self.max_mana = 20
@@ -123,6 +124,9 @@ class Player(AnimatedEntity):
         self.is_dashing = False
         self.dash_start_time = 0
         
+        self.dash_icon = pygame.transform.scale(pygame.image.load('assets/icone.png').convert_alpha(), (64, 64))
+        self.special_shot_icon = pygame.transform.scale(pygame.image.load('assets/icone.png').convert_alpha(), (64, 64))
+                
     def start_dash(self):
         current_time = pygame.time.get_ticks()
         if current_time - self.last_dash_time >= self.dash_cooldown:
@@ -132,6 +136,24 @@ class Player(AnimatedEntity):
                     self.dash_start_time = current_time
                     self.last_dash_time = current_time
                     self.current_mana -= self.mana_cost_for_dash
+                    
+    def draw_ability_icons(self, surface):
+        icons = [self.dash_icon, self.special_shot_icon]  # Lista de ícones
+        total_width = sum(icon.get_width() for icon in icons) + (len(icons) - 1) * 10  # Espaço entre ícones = 10
+        start_x = (screen_width - total_width) / 2  # Centralizar no eixo X
+        y = screen_height - 110  # Posição fixa no eixo Y
+        
+        for index, icon in enumerate(icons):
+            x = start_x + index * (icon.get_width() + 10)  # Calcula a posição X para cada ícone
+            surface.blit(icon, (x, y))
+            
+            # Para o Dash, desenha o overlay de cooldown se necessário
+            if icon == self.dash_icon:
+                cooldown_ratio = (pygame.time.get_ticks() - self.last_dash_time) / self.dash_cooldown
+                if cooldown_ratio < 1:
+                    cooldown_height = icon.get_height() * (1 - cooldown_ratio)
+                    pygame.draw.rect(surface, (0, 0, 0, 127), (x, y + icon.get_height() - cooldown_height, icon.get_width(), cooldown_height))
+
 
     def move(self, keys):
         current_time =  pygame.time.get_ticks()
@@ -187,6 +209,7 @@ class Player(AnimatedEntity):
         super().draw(surface)  # Assume que AnimatedEntity tem um método draw
         self.health_bar.draw(surface)
         self.mana_bar.draw(surface)
+        self.draw_ability_icons(surface) 
 
 class AnimatedLife(AnimatedEntity):
     def __init__(self, x, y):
@@ -366,6 +389,8 @@ class GameManager:
         self.damage_indicators = []  
         pygame.mouse.set_visible(False)
         self.animated_cursor = AnimatedEntity(0, 0, 60, 60, [f'assets/mira{i}.png' for i in range(1,5)], 0.5)
+
+    
 
 
         self.font = pygame.font.Font(None, 36)
@@ -642,6 +667,7 @@ class GameManager:
             self.boss.draw(surface)
         self.player.draw(surface)
         # Desenha a pontuação atual
+        
         score_text = font.render(f"Score: {self.current_score}", True, WHITE)
         surface.blit(score_text, (screen_width - 180, 10))  # Ajuste a posição conforme necessário
 
