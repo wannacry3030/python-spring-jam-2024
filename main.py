@@ -510,14 +510,17 @@ class GameManager:
                 self.update(keys)
                 self.draw(screen)
                 
-                #fps
+                # Desenha o FPS na tela
                 fps = clock.get_fps()
                 fps_text = font.render(f"FPS: {fps:.2f}", True, pygame.Color('white'))
                 screen.blit(fps_text, (10,5))
+
+                # Atualiza a tela
                 pygame.display.flip()
+
+                # Limita o jogo a 60 FPS
                 clock.tick(60)
-                
-            pygame.time.Clock().tick(60)
+
             
     def update(self, keys):
         # 1. Atualização do jogador
@@ -621,6 +624,9 @@ class GameManager:
         self.spawn_enemies()
     
     def draw(self,surface):
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        self.animated_cursor.x = mouse_x - self.animated_cursor.width / 2
+        self.animated_cursor.y = mouse_y - self.animated_cursor.height / 2
         screen.blit(fundo_surface, (0, 0))
         for indicator in self.damage_indicators[:]:
             indicator.update()
@@ -648,16 +654,16 @@ class GameManager:
         # Desenha a pontuação atual
         score_text = font.render(f"Score: {self.current_score}", True, WHITE)
         surface.blit(score_text, (screen_width - 180, 10))  # Ajuste a posição conforme necessário
-        
+
         # Desenha a pontuação máxima
         high_score_text = font.render(f"High Score: {self.high_score}", True, WHITE)
         surface.blit(high_score_text, (screen_width - 180, 30))  # Ajuste a posição conforme necessário
-        pygame.display.flip()    
-        mouse_x, mouse_y = pygame.mouse.get_pos()
-        self.animated_cursor.x = mouse_x - self.animated_cursor.width / 2
-        self.animated_cursor.y = mouse_y - self.animated_cursor.height / 2
+
+        # Desenha o cursor animado na posição atualizada antes de atualizar a tela
         self.animated_cursor.draw(surface)
-        # self.animated_cursor.draw(surface)
+
+        # Atualiza a tela inteira
+        pygame.display.flip()
 
         
     def show_game_over_screen(self):
