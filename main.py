@@ -198,7 +198,7 @@ class Player(AnimatedEntity):
                     self.current_mana -= self.mana_cost
                     self.last_special_shot_time = current_time  # Atualiza o tempo do último tiro especial
                     # Cria e retorna um projétil especial com rotação
-                    return Projectile(self.x + self.width / 2, self.y + self.height / 2, angle, size=3, is_special=True)
+                    return Projectile(self.x + self.width / 2, self.y + self.height / 2, angle, size=5, is_special=True)
         else:
             # Cria e retorna um projétil normal com rotação
             return Projectile(self.x + self.width / 2, self.y + self.height / 2, angle)
@@ -377,7 +377,7 @@ class Projectile:
             self.original_sprite = pygame.transform.scale(self.original_sprite, (24,24))
         elif owner == "player" and is_special:
             self.original_sprite = pygame.image.load("assets/bossT.png").convert_alpha()
-            self.original_sprite = pygame.transform.scale(self.original_sprite, (48,48))  # Tamanho maior para projéteis especiais
+            self.original_sprite = pygame.transform.scale(self.original_sprite, (100,100))  # Tamanho maior para projéteis especiais
         else:
             # Sprite padrão para projéteis do boss, se necessário
             self.original_sprite = pygame.image.load("assets/bossT.png").convert_alpha()
