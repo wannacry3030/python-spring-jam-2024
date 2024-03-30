@@ -100,8 +100,8 @@ class DamageIndicator:
 
 class Player(AnimatedEntity):
     def __init__(self, x, y):
-        sprite_paths = [f'assets/flower{i}.png' for i in range(1, 3)]
-        super().__init__(x, y, 50, 50, sprite_paths)
+        sprite_paths = [f'assets/flower{i}.png' for i in range(1)]
+        super().__init__(x, y, 100, 100, sprite_paths)
         self.speed = 7
         self.lives = 5
         self.max_health = 100
@@ -179,11 +179,11 @@ class Player(AnimatedEntity):
 
             
     def update_health_bar_position(self):
-        self.health_bar.x = self.x
-        self.health_bar.y = self.y + 60
+        self.health_bar.x = self.x + (self.width - self.health_bar.width) / 2
+        self.health_bar.y = self.y + self.height + 10
     def update_mana_bar_position(self):
-        self.mana_bar.x = self.x
-        self.mana_bar.y = self.y + 70
+        self.mana_bar.x = self.x + (self.width - self.mana_bar.width) / 2
+        self.mana_bar.y = self.y + self.height + 20
 
     def lose_life(self, damage):
         self.current_health -= damage
