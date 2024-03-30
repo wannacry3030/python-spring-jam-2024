@@ -106,7 +106,7 @@ class Player(AnimatedEntity):
         super().__init__(x, y, 100, 100, sprite_paths)
         self.speed = 7
         self.lives = 5
-        self.max_health = 100
+        self.max_health = 20
         self.current_health =self.max_health
         self.health_bar = StatusBar(10, 10, 50, 8, (251,242,54), self.max_health)  
         self.max_mana = 20
@@ -372,7 +372,7 @@ class GameManager:
         self.boss = None
         self.current_score = 0
         self.high_score = self.load_high_score()
-        self.mana_recharge_rate = 0.08
+        self.mana_recharge_rate = 0.1
         self.damage_indicators = []  
         pygame.mouse.set_visible(False)
         self.animated_cursor = AnimatedEntity(0, 0, 60, 60, [f'assets/mira{i}.png' for i in range(1,5)], 0.5)
@@ -418,7 +418,7 @@ class GameManager:
 
     def spawn_boss(self):
         # Condição para spawnar o boss, por exemplo, alcançar um certo score
-        if self.current_score > 100 and self.boss is None and not self.boss_defeated:
+        if self.current_score > 10 and self.boss is None and not self.boss_defeated:
             self.boss = Boss(screen_width // 2, 100)  # Ajuste a posição de spawn
             
     def spawn_projectile(self, x, y, angle, is_special, owner=""):
