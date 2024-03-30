@@ -233,6 +233,10 @@ class AnimatedLife(AnimatedEntity):
         sprite_paths = ['assets/sol1.png', 'assets/sol2.png']  # Adicione os caminhos para suas imagens de coração aqui
         super().__init__(x, y, 50, 50, sprite_paths, animation_time=0.3)  # Ajuste animation_time para controlar a velocidade da animação
 
+class ManaOrb(AnimatedEntity):
+    def __init__(self, x, y):
+        sprite_paths = [f'assets/gota{i}.png' for i in range(6)]  # Adicione os caminhos para suas imagens de animação aqui
+        super().__init__(x, y, 50, 50, sprite_paths, animation_time=0.3)  # Ajuste animation_time para controlar a velocidade da animação
 
 
 class Enemy(AnimatedEntity):
@@ -404,8 +408,9 @@ class GameManager:
         self.boss = None
         self.current_score = 0
         self.high_score = self.load_high_score()
-        self.mana_recharge_rate = 0.1
-        self.damage_indicators = []  
+        self.mana_recharge_rate = 0.01
+        self.damage_indicators = []
+        self.mana_orbs = []
         pygame.mouse.set_visible(False)
         self.animated_cursor = AnimatedEntity(0, 0, 60, 60, [f'assets/mira{i}.png' for i in range(1,5)], 0.5)
 
@@ -635,26 +640,38 @@ class GameManager:
                              
         for enemy in self.enemies:
             enemy.move_towards_player(self.player.x, self.player.y)  # Atualiza posição dos inimigos
+        
+        for orb in self.mana_orbs[:]:
+            orb.update_sprites()
+            
+        for orb in self.mana_orbs[:]:  # Use uma cópia da lista para evitar problemas ao remover itens
+            # Verifica se a distância entre os centros dos objetos é menor que a soma de seus raios
+            if math.sqrt((self.player.x + self.player.width / 2 - (orb.x + orb.width / 2))**2 + (self.player.y + self.player.height / 2 - (orb.y + orb.height / 2))**2) < (self.player.width / 2 + orb.width / 2):
+                # Se houver colisão
+                self.mana_orbs.remove(orb)
+                self.player.current_mana += 5  # Adiciona mana ao jogador
+                self.player.current_mana = min(self.player.current_mana, self.player.max_mana)  # Garante que a mana não exceda o máximo
 
+        
         for projectile in self.projectiles[:]:
             projectile.move()
-            if projectile.owner == "player":
-                if not (0 <= projectile.x <= screen_width and 0 <= projectile.y <= screen_height):
-                    self.projectiles.remove(projectile)
-                else:
-                    for enemy in self.enemies[:]:
-                        if pygame.Rect(enemy.x, enemy.y, enemy.width, enemy.height).colliderect(pygame.Rect(projectile.x - projectile.radius, projectile.y - projectile.radius, projectile.radius * 2, projectile.radius * 2)):
-                            damage_indicator = DamageIndicator(enemy.x, enemy.y, projectile.damage, self.font)
-                            self.damage_indicators.append(damage_indicator)
-                            enemy.lose_life(projectile.damage)  # O inimigo perde uma vida
-                            if not enemy.is_alive():  # Se o inimigo não estiver mais vivo, remova-o
-                                self.current_score += enemy.score_value
-                                self.enemies.remove(enemy)
-                            if projectile in self.projectiles:
-                                self.projectiles.remove(projectile)
+            if not (0 <= projectile.x <= screen_width and 0 <= projectile.y <= screen_height):
+                self.projectiles.remove(projectile)
+            else:
+                for enemy in self.enemies[:]:
+                    if pygame.Rect(enemy.x, enemy.y, enemy.width, enemy.height).colliderect(pygame.Rect(projectile.x - projectile.radius, projectile.y - projectile.radius, projectile.radius * 2, projectile.radius * 2)):
+                        damage_indicator = DamageIndicator(enemy.x, enemy.y, projectile.damage, self.font)
+                        self.damage_indicators.append(damage_indicator)
+                        enemy.lose_life(projectile.damage)  # O inimigo perde uma vida
+                        if not enemy.is_alive():  # Se o inimigo não estiver mais vivo, remova-o
+                            self.current_score += enemy.score_value
+                            self.enemies.remove(enemy)
+                            # Gera uma ManaOrb com 30% de chance na posição do inimigo derrotado
                             if random.random() < 0.3:
-                                self.mana_orbs.append(ManaOrb(enemy.x,enemy.y))
-        
+                                self.mana_orbs.append(ManaOrb(enemy.x, enemy.y))
+                        if projectile in self.projectiles:
+                            self.projectiles.remove(projectile)
+                                    
      
 
         self.spawn_enemies()
@@ -684,6 +701,10 @@ class GameManager:
         for life in self.lives:
             life.draw(screen)
             life.update_sprites()
+        for orb in self.mana_orbs:
+            screen.blit(orb.sprites[orb.current_sprite], (orb.x, orb.y))
+
+        
         if self.boss:
             self.boss.draw(surface)
         self.player.draw(surface)
