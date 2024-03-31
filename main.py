@@ -408,7 +408,7 @@ class GameManager:
         self.boss = None
         self.current_score = 0
         self.high_score = self.load_high_score()
-        self.mana_recharge_rate = 0.01
+        self.mana_recharge_rate = 0.03
         self.damage_indicators = []
         self.mana_orbs = []
         pygame.mouse.set_visible(False)
@@ -457,7 +457,7 @@ class GameManager:
 
     def spawn_boss(self):
         # Condição para spawnar o boss, por exemplo, alcançar um certo score
-        if self.current_score > 10 and self.boss is None and not self.boss_defeated:
+        if self.current_score > 100 and self.boss is None and not self.boss_defeated:
             self.boss = Boss(screen_width // 2, 100)  # Ajuste a posição de spawn
             
     def spawn_projectile(self, x, y, angle, is_special, owner=""):
@@ -566,8 +566,7 @@ class GameManager:
         self.player.move(keys)
         self.player.update_sprites()
         self.player.current_mana = min(self.player.current_mana + self.mana_recharge_rate, self.player.max_mana)
-        self.player.mana_bar.update(self.player.current_mana)
-        
+        self.player.mana_bar.update(self.player.current_mana)     
         mouse_x, mouse_y = pygame.mouse.get_pos()
         self.animated_cursor.x = mouse_x
         self.animated_cursor.y = mouse_y
@@ -619,14 +618,13 @@ class GameManager:
                     self.damage_indicators.append(damage_indicator)
                     self.player.lose_life(projectile.damage)  # Aplica o dano corretamente
                     self.projectiles.remove(projectile)
-                
-                    
+                                    
         if self.player.current_health <= 0:
             self.game_over = True
             
         for life in self.lives[:]: 
             if pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height).colliderect(pygame.Rect(life.x, life.y, life.width, life.height)):
-                self.player.current_health += 1  
+                self.player.current_health += 5  
                 self.player.current_health = min(self.player.current_health, self.player.max_health)
                 self.player.health_bar.update(self.player.current_health)
                 self.lives.remove(life) 
@@ -651,7 +649,6 @@ class GameManager:
                 self.mana_orbs.remove(orb)
                 self.player.current_mana += 5  # Adiciona mana ao jogador
                 self.player.current_mana = min(self.player.current_mana, self.player.max_mana)  # Garante que a mana não exceda o máximo
-
         
         for projectile in self.projectiles[:]:
             projectile.move()
@@ -669,11 +666,11 @@ class GameManager:
                             # Gera uma ManaOrb com 30% de chance na posição do inimigo derrotado
                             if random.random() < 0.3:
                                 self.mana_orbs.append(ManaOrb(enemy.x, enemy.y))
+                            if random.random() < 0.3:  # Supondo uma chance de 30%
+                                self.lives.append(AnimatedLife(enemy.x, enemy.y))
                         if projectile in self.projectiles:
                             self.projectiles.remove(projectile)
                                     
-     
-
         self.spawn_enemies()
     
     def draw(self,surface):
