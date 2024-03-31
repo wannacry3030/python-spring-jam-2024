@@ -263,15 +263,15 @@ class Enemy(AnimatedEntity):
 
 class RedEnemy(Enemy):
     def __init__(self, x, y):
-        sprite_paths = [f'assets/enemy{i}.png' for i in range(1, 3)]
-        super().__init__(x, y, 100, 100, sprite_paths, speed=2, damage=2)
+        sprite_paths = [f'assets/rat{i}.png' for i in range(3)]
+        super().__init__(x, y, 100, 100, sprite_paths, speed=1, damage=2)
         self.lives = 3
         self.score_value = 2
 
 class WhiteEnemy(Enemy):
     def __init__(self, x, y):
-        sprite_paths = [f'assets/enemy{i}.png' for i in range(1, 3)]
-        super().__init__(x, y, 60, 60, sprite_paths, speed=1, damage=1)
+        sprite_paths = [f'assets/enemy{i}.png' for i in range(4)]
+        super().__init__(x, y, 84, 36, sprite_paths, speed=0.5, damage=1)
         self.lives = 1
         self.score_value = 1
 
