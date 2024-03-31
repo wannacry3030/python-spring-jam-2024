@@ -354,18 +354,6 @@ class Boss(AnimatedEntity):
         # Realiza um ataque periodicamente
         if pygame.time.get_ticks() % 2000 < 50:  # A cada aproximadamente 2 segundos
             self.perform_attack(game_manager)
-
-class ProjectileFactory:
-    @staticmethod
-    def create_projectile(type, x, y, target_x, target_y, player_mana):
-        angle = math.atan2(target_y - y, target_x - x)
-        if type == "normal":
-            return Projectile(x, y, angle)
-        elif type == "special":
-            if player_mana >= 10:  # Supondo 10 como o custo de mana para um projétil especial
-                return Projectile(x, y, angle, size=3, speed=20, radius=15, damage=3)
-        # Adicionar mais condições para diferentes tipos de projéteis
-        return None
       
 class Projectile:
     # O construtor e o método move() permanecem os mesmos
@@ -385,6 +373,10 @@ class Projectile:
         elif owner == "player" and is_special:
             self.original_sprite = pygame.image.load("assets/bossT.png").convert_alpha()
             self.original_sprite = pygame.transform.scale(self.original_sprite, (100,100))  # Tamanho maior para projéteis especiais
+        elif owner == "enemy":
+            # Sprite específico para projéteis disparados pelos inimigos comuns
+            self.original_sprite = pygame.image.load("assets/semente.png").convert_alpha()
+            self.original_sprite = pygame.transform.scale(self.original_sprite, (30,30))  # Ajuste o tamanho conforme necessário
         else:
             # Sprite padrão para projéteis do boss, se necessário
             self.original_sprite = pygame.image.load("assets/bossT.png").convert_alpha()
@@ -611,7 +603,7 @@ class GameManager:
                     self.player.lose_life(projectile.damage)  # Aplica o dano corretamente
                     self.projectiles.remove(projectile)
             # checagem de colisao com o jogador dos projeteis do enemy       
-            elif projectile.owner == "enemy":
+            elif projectile.owner == "enemy"and pygame.Rect(projectile.x - projectile.radius, projectile.y - projectile.radius, projectile.radius * 2, projectile.radius * 2).colliderect(pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height)):
                 if pygame.Rect(projectile.x - projectile.radius, projectile.y - projectile.radius, projectile.radius * 2, projectile.radius * 2).colliderect(pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height)):
                     damage_indicator = DamageIndicator(projectile.x, projectile.y, projectile.damage, self.font)
                     self.damage_indicators.append(damage_indicator)
@@ -652,24 +644,29 @@ class GameManager:
         
         for projectile in self.projectiles[:]:
             projectile.move()
+
+            # Remove projéteis que saíram da tela
             if not (0 <= projectile.x <= screen_width and 0 <= projectile.y <= screen_height):
                 self.projectiles.remove(projectile)
-            else:
+                continue
+
+            # Para projéteis de inimigos, verificar colisão apenas com o jogador
+            if projectile.owner == "enemy":
+                if pygame.Rect(projectile.x - projectile.radius, projectile.y - projectile.radius, projectile.radius * 2, projectile.radius * 2).colliderect(pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height)):
+                    # Aplica dano ao jogador
+                    self.player.lose_life(projectile.damage)
+                    self.projectiles.remove(projectile)
+
+            # Para projéteis do jogador, verificar colisão com inimigos e boss
+            elif projectile.owner == "player":
                 for enemy in self.enemies[:]:
                     if pygame.Rect(enemy.x, enemy.y, enemy.width, enemy.height).colliderect(pygame.Rect(projectile.x - projectile.radius, projectile.y - projectile.radius, projectile.radius * 2, projectile.radius * 2)):
-                        damage_indicator = DamageIndicator(enemy.x, enemy.y, projectile.damage, self.font)
-                        self.damage_indicators.append(damage_indicator)
-                        enemy.lose_life(projectile.damage)  # O inimigo perde uma vida
-                        if not enemy.is_alive():  # Se o inimigo não estiver mais vivo, remova-o
-                            self.current_score += enemy.score_value
+                        # Aplica dano ao inimigo
+                        enemy.lose_life(projectile.damage)
+                        if not enemy.is_alive():
                             self.enemies.remove(enemy)
-                            # Gera uma ManaOrb com 30% de chance na posição do inimigo derrotado
-                            if random.random() < 0.3:
-                                self.mana_orbs.append(ManaOrb(enemy.x, enemy.y))
-                            if random.random() < 0.3:  # Supondo uma chance de 30%
-                                self.lives.append(AnimatedLife(enemy.x, enemy.y))
-                        if projectile in self.projectiles:
-                            self.projectiles.remove(projectile)
+                        self.projectiles.remove(projectile)
+                        break  # Previne múltiplas colisões com o mesmo projétil
                                     
         self.spawn_enemies()
     
