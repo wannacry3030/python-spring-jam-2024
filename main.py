@@ -5,7 +5,6 @@ import random
 import time
 
 pygame.init()
-# Configurações da tela
 screen_width, screen_height = 1500, 750
 screen = pygame.display.set_mode((screen_width, screen_height), pygame.DOUBLEBUF)
 pygame.display.set_caption("teste 1")
@@ -581,7 +580,7 @@ class GameManager:
             if pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height).colliderect(pygame.Rect(enemy.x, enemy.y, enemy.width, enemy.height)):
                 damage_indicator = DamageIndicator(enemy.x, enemy.y, enemy.damage, self.font)
                 self.damage_indicators.append(damage_indicator)
-                self.player.lose_life(enemy.damage
+                self.player.lose_life(enemy.damage)
                 self.apply_knock_back(enemy) 
                              
         for enemy in self.enemies:
@@ -689,7 +688,7 @@ class GameManager:
                         return  # Retorna ao jogo
             
 def draw_start_screen():
-    screen.blit(start_screen_surface, (0, 0)
+    screen.blit(start_screen_surface, (0, 0))
     pygame.display.flip()
 
 if __name__ == "__main__":
