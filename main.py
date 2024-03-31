@@ -128,8 +128,8 @@ class Player(AnimatedEntity):
         self.special_shot_cooldown = 3000 # miliseg
         self.last_special_shot_time = 0
         
-        self.dash_icon = pygame.transform.scale(pygame.image.load('assets/icone.png').convert_alpha(), (64, 64))
-        self.special_shot_icon = pygame.transform.scale(pygame.image.load('assets/icone.png').convert_alpha(), (64, 64))
+        self.dash_icon = pygame.transform.scale(pygame.image.load('assets/sprint.png').convert_alpha(), (64, 64))
+        self.special_shot_icon = pygame.transform.scale(pygame.image.load('assets/leafsuper.png').convert_alpha(), (64, 64))
                 
     def start_dash(self):
         current_time = pygame.time.get_ticks()
