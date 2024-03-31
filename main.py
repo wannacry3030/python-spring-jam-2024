@@ -307,7 +307,7 @@ class Boss(AnimatedEntity):
         self.speed = 2  # Velocidade de movimento do boss
         self.attack_pattern = 0  # Padrão de ataque atual do boss 
         self.phase = 1
-        self.attack_cooldown = 2000
+        self.attack_cooldown = 3000
         self.last_attack_time = 0
         
     def move_towards_player(self, player_x, player_y):
@@ -329,7 +329,7 @@ class Boss(AnimatedEntity):
             for angle in range(0, 360, 45):
                 rad_angle = math.radians(angle)
                 # Aumenta a velocidade para 25 (ou qualquer valor desejado)
-                game_manager.spawn_projectile(self.x, self.y, rad_angle, is_special=True, owner="boss", speed=5)
+                game_manager.spawn_projectile(self.x, self.y, rad_angle, is_special=True, owner="boss", speed=2)
             self.last_attack_time = current_time
                 
     def draw(self, surface):
