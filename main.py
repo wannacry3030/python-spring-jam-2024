@@ -4,12 +4,8 @@ import math
 import random
 import time
 
-# Inicialização do Pygame
 pygame.init()
-
-
 # Configurações da tela
-
 screen_width, screen_height = 1500, 750
 screen = pygame.display.set_mode((screen_width, screen_height), pygame.DOUBLEBUF)
 pygame.display.set_caption("teste 1")
@@ -20,16 +16,13 @@ fundo_surface = pygame.image.load(fundo_image).convert_alpha()
 start_screen_surface = pygame.image.load(start_screen_image)
 game_over_surface = pygame.image.load(game_over_img)
 fundo_surface = pygame.transform.scale(fundo_surface,(screen_width,screen_height))
-
 # Cores
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
-PINK = (255, 105, 180)  # Cor para a vida extra
-
 # Fonte
 font = pygame.font.Font(None, 36)
-#essa classe é para padronizar e facilitar a criação de  novos sprites para inimigos, é só passar o argumento dela e definir o caminho do sprite etc..
+
 class AnimatedEntity:
     def __init__(self, x, y, width, height, sprite_paths, animation_time=0.1):
         self.x = x
@@ -51,7 +44,6 @@ class AnimatedEntity:
     def draw(self, surface):
         surface.blit(self.sprites[self.current_sprite], (self.x, self.y))
         
-
 class StatusBar:
     def __init__(self, x, y, width, height, color, max_value):
         self.x = x
@@ -151,19 +143,18 @@ class Player(AnimatedEntity):
             x = start_x + index * (icon.get_width() + 10)  # Calcula a posição X para cada ícone
             surface.blit(icon, (x, y))
             
-            # Para o Dash, desenha o overlay de cooldown se necessário
+            # Para o Dash o overlay de cooldown 
             if icon == self.dash_icon:
                 cooldown_ratio = (pygame.time.get_ticks() - self.last_dash_time) / self.dash_cooldown
                 if cooldown_ratio < 1:
                     cooldown_height = icon.get_height() * (1 - cooldown_ratio)
                     pygame.draw.rect(surface, (0, 0, 0, 127), (x, y + icon.get_height() - cooldown_height, icon.get_width(), cooldown_height))
-        # Para o projétil especial, desenha o overlay de cooldown se necessário
+        # Para o projétil especial, desenha o overlay de cooldown
             if icons[index] == self.special_shot_icon:
                 cooldown_ratio = max(0, min((pygame.time.get_ticks() - self.last_special_shot_time) / self.special_shot_cooldown, 1))
                 if cooldown_ratio < 1:
                     cooldown_height = icons[index].get_height() * (1 - cooldown_ratio)
                     pygame.draw.rect(surface, (0, 0, 0, 127), (x, y + icons[index].get_height() - cooldown_height, icons[index].get_width(), cooldown_height))
-
 
     def move(self, keys):
         current_time =  pygame.time.get_ticks()
@@ -204,8 +195,6 @@ class Player(AnimatedEntity):
             # Cria e retorna um projétil normal com rotação
             return Projectile(self.x + self.width / 2, self.y + self.height / 2, angle)
         return None  # Retorna None se o tiro especial estiver em cooldown
-
-
             
     def update_health_bar_position(self):
         self.health_bar.x = self.x + (self.width - self.health_bar.width) / 2
@@ -230,14 +219,12 @@ class Player(AnimatedEntity):
 
 class AnimatedLife(AnimatedEntity):
     def __init__(self, x, y):
-        sprite_paths = ['assets/sol1.png', 'assets/sol2.png']  # Adicione os caminhos para suas imagens de coração aqui
-        super().__init__(x, y, 50, 50, sprite_paths, animation_time=0.3)  # Ajuste animation_time para controlar a velocidade da animação
-
+        sprite_paths = ['assets/sol1.png', 'assets/sol2.png']
+        super().__init__(x, y, 50, 50, sprite_paths, animation_time=0.3)
 class ManaOrb(AnimatedEntity):
     def __init__(self, x, y):
-        sprite_paths = [f'assets/gota{i}.png' for i in range(6)]  # Adicione os caminhos para suas imagens de animação aqui
-        super().__init__(x, y, 50, 50, sprite_paths, animation_time=0.3)  # Ajuste animation_time para controlar a velocidade da animação
-
+        sprite_paths = [f'assets/gota{i}.png' for i in range(6)]
+        super().__init__(x, y, 50, 50, sprite_paths, animation_time=0.3)
 
 class Enemy(AnimatedEntity):
     def __init__(self, x, y, width, height, sprite_paths, speed, damage):
@@ -246,7 +233,6 @@ class Enemy(AnimatedEntity):
         self.lives = 3
         self.damage = damage
 
-        
     def move_towards_player(self, player_x, player_y):
         angle = math.atan2(player_y - self.y, player_x - self.x)
         self.x += self.speed * math.cos(angle)
@@ -278,7 +264,7 @@ class WhiteEnemy(Enemy):
 class ShootingEnemy(Enemy):
     def __init__(self, x, y):
         super().__init__(x, y, 60, 60, [f'assets/corvo{i}.png' for i in range(4)], speed=1, damage=1)
-        self.shoot_cooldown = 2000  # Cooldown de 2000 ms (2 segundos) entre tiros
+        self.shoot_cooldown = 2000  # Cooldown de 2000 ms (2 segundos)
         self.last_shot_time = pygame.time.get_ticks()
         self.score_value = 2
         self.lives = 5
@@ -300,12 +286,12 @@ class ShootingEnemy(Enemy):
 
 class Boss(AnimatedEntity):
     def __init__(self, x, y):
-        super().__init__(x, y, 150, 150,[f'assets/bee{i}.png' for i in range(4)], 0.2)  # Tamanho e tempo de animação ajustáveis
+        super().__init__(x, y, 150, 150,[f'assets/bee{i}.png' for i in range(4)], 0.2)  
         self.max_lives = 100
         self.lives = self.max_lives
-        self.damage = 3  # Dano que o boss causa
-        self.speed = 2  # Velocidade de movimento do boss
-        self.attack_pattern = 0  # Padrão de ataque atual do boss 
+        self.damage = 3  
+        self.speed = 2 
+        self.attack_pattern = 0
         self.phase = 1
         self.attack_cooldown = 3000
         self.last_attack_time = 0
@@ -315,10 +301,8 @@ class Boss(AnimatedEntity):
         dx = player_x - self.x
         dy = player_y - self.y
         dist = math.sqrt(dx**2 + dy**2)
-        
         # Normaliza a direção
         dx, dy = dx / dist, dy / dist
-        
         # Aplica a velocidade ao boss e move-o em direção ao jogador
         self.x += dx * self.speed
         self.y += dy * self.speed
@@ -328,7 +312,6 @@ class Boss(AnimatedEntity):
         if current_time - self.last_attack_time >= self.attack_cooldown:
             for angle in range(0, 360, 45):
                 rad_angle = math.radians(angle)
-                # Aumenta a velocidade para 25 (ou qualquer valor desejado)
                 game_manager.spawn_projectile(self.x, self.y, rad_angle, is_special=True, owner="boss", speed=2)
             self.last_attack_time = current_time
                 
@@ -344,12 +327,9 @@ class Boss(AnimatedEntity):
         # Atualiza a fase do boss com base em sua vida
         if self.lives <= 90 and self.phase == 1:
             self.phase = 2
-            # Muda para uma fase mais agressiva
             self.speed += 2
             self.attack_cooldown = 1000
             
-        
-        # Move o boss em direção ao jogador
         self.move_towards_player(player_x, player_y)
         
         # Realiza um ataque periodicamente
@@ -357,7 +337,6 @@ class Boss(AnimatedEntity):
             self.perform_attack(game_manager)
       
 class Projectile:
-    # O construtor e o método move() permanecem os mesmos
     def __init__(self, x, y, angle, size=1, speed=15, radius=5, damage=1, owner ="player", is_special=False):
         self.x = x
         self.y = y
@@ -373,13 +352,11 @@ class Projectile:
             self.original_sprite = pygame.transform.scale(self.original_sprite, (24,24))
         elif owner == "player" and is_special:
             self.original_sprite = pygame.image.load("assets/leaf.png").convert_alpha()
-            self.original_sprite = pygame.transform.scale(self.original_sprite, (100,100))  # Tamanho maior para projéteis especiais
+            self.original_sprite = pygame.transform.scale(self.original_sprite, (100,100))
         elif owner == "enemy":
-            # Sprite específico para projéteis disparados pelos inimigos comuns
             self.original_sprite = pygame.image.load("assets/pena.png").convert_alpha()
-            self.original_sprite = pygame.transform.scale(self.original_sprite, (30,30))  # Ajuste o tamanho conforme necessário
+            self.original_sprite = pygame.transform.scale(self.original_sprite, (30,30))
         elif owner == "boss":
-            # Sprite padrão para projéteis do boss, se necessário
             self.original_sprite = pygame.image.load("assets/sting.png").convert_alpha()
             self.original_sprite = pygame.transform.scale(self.original_sprite, (45,60))
         self.sprite = self.original_sprite
@@ -406,10 +383,6 @@ class GameManager:
         self.mana_orbs = []
         pygame.mouse.set_visible(False)
         self.animated_cursor = AnimatedEntity(0, 0, 60, 60, [f'assets/mira{i}.png' for i in range(1,5)], 0.5)
-
-    
-
-
         self.font = pygame.font.Font(None, 36)
         
     def reset_game(self):
@@ -444,18 +417,17 @@ class GameManager:
 
     def spawn_lives(self):
         current_time = time.time()
-        if current_time - self.last_life_spawn > 5:  # Ajuste o tempo conforme necessário
+        if current_time - self.last_life_spawn > 5:
             self.lives.append(AnimatedLife(random.randint(0, screen_width - 30), random.randint(0, screen_height - 30)))
             self.last_life_spawn = current_time
 
     def spawn_boss(self):
-        # Condição para spawnar o boss, por exemplo, alcançar um certo score
+        # Condição para spawnar o boss
         if self.current_score > 5 and self.boss is None and not self.boss_defeated:
-            self.boss = Boss(screen_width // 2, 100)  # Ajuste a posição de spawn
+            self.boss = Boss(screen_width // 2, 100)  # posição de spawn
             
     def spawn_projectile(self, x, y, angle, is_special, owner="",speed=15):
         size = 3 if is_special else 1
-        # speed = 20 if is_special else 15
         radius = 10 if is_special else 5
         damage = 3 if is_special else 1 
         if owner == "enemy":
@@ -488,14 +460,8 @@ class GameManager:
                     projectile = self.player.shoot(adjusted_x, adjusted_y, is_special=True)
                 if projectile:
                     self.projectiles.append(projectile)
-
                     
-    def shoot(self, x, y):
-        # Código para criar e adicionar um novo tiro na posição (x, y)
-        pass
-   
     def spawn_enemies(self):
-        # O código permanece o mesmo
         if len(self.enemies) < 5 and random.randint(0, 60) == 0:
             enemy = WhiteEnemy(random.randint(0, screen_width - 50), random.randint(0, screen_height - 50))
             self.enemies.append(enemy)
@@ -511,21 +477,18 @@ class GameManager:
         dx = enemy.x - self.player.x
         dy = enemy.y - self.player.y
         dist = math.sqrt(dx ** 2 + dy ** 2)
-        
         # Evitar divisão por zero
         if dist == 0: dist = 1
-        
-        # Calcular o novo x e y baseado na intensidade do knock back
+        # Calcular o novo x e y baseado na intensidade
         new_x = enemy.x + (dx / dist) * intensity
         new_y = enemy.y + (dy / dist) * intensity
-        
         # Assegurar que o inimigo não saia da tela
         enemy.x = max(0, min(screen_width - enemy.width, new_x))
         enemy.y = max(0, min(screen_height - enemy.height, new_y))
         
     def run(self):
         clock = pygame.time.Clock()
-        draw_start_screen()  # Mostra a tela de início
+        draw_start_screen()
         waiting_for_input = True
         while waiting_for_input:
             for event in pygame.event.get():
@@ -543,19 +506,15 @@ class GameManager:
                 self.spawn_lives()
                 self.update(keys)
                 self.draw(screen)
-                
                 # Desenha o FPS na tela
                 fps = clock.get_fps()
                 fps_text = font.render(f"FPS: {fps:.2f}", True, pygame.Color('white'))
                 screen.blit(fps_text, (10,5))
-
                 # Atualiza a tela
                 pygame.display.flip()
-
                 # Limita o jogo a 60 FPS
                 clock.tick(60)
-
-            
+           
     def update(self, keys):
         # 1. Atualização do jogador
         self.player.move(keys)
@@ -566,19 +525,14 @@ class GameManager:
         self.animated_cursor.x = mouse_x
         self.animated_cursor.y = mouse_y
         self.animated_cursor.update_sprites()
-
-
         # 2. Tentativa de spawnar o boss
         self.spawn_boss()
-
         # 3. Atualizar o boss, se ele existir
         if self.boss:
             self.boss.update(self.player.x, self.player.y, self)
-
         # 4. Checagem de colisão entre o jogador e o boss (aplicar dano ao jogador)
         if self.boss and pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height).colliderect(pygame.Rect(self.boss.x, self.boss.y, self.boss.width, self.boss.height)):
             self.player.lose_life(self.boss.damage)
-
         # 5. Processamento de projéteis do jogador
         for projectile in self.projectiles[:]:
             projectile.move()
@@ -586,7 +540,6 @@ class GameManager:
             if not (0 <= projectile.x <= screen_width and 0 <= projectile.y <= screen_height):
                 self.projectiles.remove(projectile)
                 continue
-
             # Checagem de colisão com o boss para projéteis do jogador
             if projectile.owner == "player" and self.boss:
                 if pygame.Rect(projectile.x - projectile.radius, projectile.y - projectile.radius, projectile.radius * 2, projectile.radius * 2).colliderect(pygame.Rect(self.boss.x, self.boss.y, self.boss.width, self.boss.height)):
@@ -615,7 +568,7 @@ class GameManager:
                     self.projectiles.remove(projectile)
                                     
         if self.player.current_health <= 0:
-            self.game_over = True
+            self.game_over = True         
             
         for life in self.lives[:]: 
             if pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height).colliderect(pygame.Rect(life.x, life.y, life.width, life.height)):
@@ -623,12 +576,12 @@ class GameManager:
                 self.player.current_health = min(self.player.current_health, self.player.max_health)
                 self.player.health_bar.update(self.player.current_health)
                 self.lives.remove(life) 
-                            
+                                     
         for enemy in self.enemies[:]:
             if pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height).colliderect(pygame.Rect(enemy.x, enemy.y, enemy.width, enemy.height)):
                 damage_indicator = DamageIndicator(enemy.x, enemy.y, enemy.damage, self.font)
                 self.damage_indicators.append(damage_indicator)
-                self.player.lose_life(enemy.damage)  # O jogador perde vidas com base no dano do inimigo
+                self.player.lose_life(enemy.damage
                 self.apply_knock_back(enemy) 
                              
         for enemy in self.enemies:
@@ -637,7 +590,7 @@ class GameManager:
         for orb in self.mana_orbs[:]:
             orb.update_sprites()
             
-        for orb in self.mana_orbs[:]:  # Use uma cópia da lista para evitar problemas ao remover itens
+        for orb in self.mana_orbs[:]:
             # Verifica se a distância entre os centros dos objetos é menor que a soma de seus raios
             if math.sqrt((self.player.x + self.player.width / 2 - (orb.x + orb.width / 2))**2 + (self.player.y + self.player.height / 2 - (orb.y + orb.height / 2))**2) < (self.player.width / 2 + orb.width / 2):
                 # Se houver colisão
@@ -647,24 +600,20 @@ class GameManager:
         
         for projectile in self.projectiles[:]:
             projectile.move()
-
             # Remove projéteis que saíram da tela
             if not (0 <= projectile.x <= screen_width and 0 <= projectile.y <= screen_height):
                 self.projectiles.remove(projectile)
                 continue
-
             # Para projéteis de inimigos, verificar colisão apenas com o jogador
             if projectile.owner == "enemy":
                 if pygame.Rect(projectile.x - projectile.radius, projectile.y - projectile.radius, projectile.radius * 2, projectile.radius * 2).colliderect(pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height)):
                     # Aplica dano ao jogador
                     self.player.lose_life(projectile.damage)
                     self.projectiles.remove(projectile)
-
             # Para projéteis do jogador, verificar colisão com inimigos e boss
             elif projectile.owner == "player":
                 for enemy in self.enemies[:]:
                     if pygame.Rect(enemy.x, enemy.y, enemy.width, enemy.height).colliderect(pygame.Rect(projectile.x - projectile.radius, projectile.y - projectile.radius, projectile.radius * 2, projectile.radius * 2)):
-                        # Aplica dano ao inimigo
                         enemy.lose_life(projectile.damage)
                         if not enemy.is_alive():
                             self.enemies.remove(enemy)
@@ -674,22 +623,24 @@ class GameManager:
                             self.lives.append(AnimatedLife(enemy.x, enemy.y))
                         if random.random() < 0.3:  # Exemplo de chance de 30% de dropar mana
                             self.mana_orbs.append(ManaOrb(enemy.x, enemy.y))
-                        break  # Previne múltiplas colisões com o mesmo projétil
-                                    
+                        break  # Previne múltiplas colisões com o mesmo projétil                         
         self.spawn_enemies()
-    
+
     def draw(self,surface):
         mouse_x, mouse_y = pygame.mouse.get_pos()
         self.animated_cursor.x = mouse_x - self.animated_cursor.width / 2
         self.animated_cursor.y = mouse_y - self.animated_cursor.height / 2
         screen.blit(fundo_surface, (0, 0))
+        
         for indicator in self.damage_indicators[:]:
             indicator.update()
             indicator.draw(screen)
             if indicator.is_expired():
                 self.damage_indicators.remove(indicator)  
+                
         for projectile in self.projectiles:
             projectile.draw(screen)
+            
         for enemy in self.enemies:
             enemy.draw(screen)
             enemy.update_sprites()
@@ -703,31 +654,24 @@ class GameManager:
         for life in self.lives:
             life.draw(screen)
             life.update_sprites()
+            
         for orb in self.mana_orbs:
             screen.blit(orb.sprites[orb.current_sprite], (orb.x, orb.y))
 
-        
         if self.boss:
             self.boss.draw(surface)
         self.player.draw(surface)
-        # Desenha a pontuação atual
         
         score_text = font.render(f"Score: {self.current_score}", True, WHITE)
-        surface.blit(score_text, (screen_width - 180, 10))  # Ajuste a posição conforme necessário
-
-        # Desenha a pontuação máxima
+        surface.blit(score_text, (screen_width - 180, 10)) 
         high_score_text = font.render(f"High Score: {self.high_score}", True, WHITE)
-        surface.blit(high_score_text, (screen_width - 180, 30))  # Ajuste a posição conforme necessário
-
-        # Desenha o cursor animado na posição atualizada antes de atualizar a tela
+        surface.blit(high_score_text, (screen_width - 180, 30))  
         self.animated_cursor.draw(surface)
-
         # Atualiza a tela inteira
         pygame.display.flip()
 
-        
     def show_game_over_screen(self):
-        screen.blit(game_over_surface, (0, 0))  # Ajuste a posição conforme necessário
+        screen.blit(game_over_surface, (0, 0))
         pygame.display.flip()
         self.update_high_score()
         
@@ -745,10 +689,9 @@ class GameManager:
                         return  # Retorna ao jogo
             
 def draw_start_screen():
-    screen.blit(start_screen_surface, (0, 0))  # Desenha a imagem na tela inteira
+    screen.blit(start_screen_surface, (0, 0)
     pygame.display.flip()
 
-    
 if __name__ == "__main__":
     game_manager = GameManager()
     game_manager.run()
