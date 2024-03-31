@@ -277,7 +277,7 @@ class WhiteEnemy(Enemy):
 
 class ShootingEnemy(Enemy):
     def __init__(self, x, y):
-        super().__init__(x, y, 60, 60, [f'assets/e{i}.png' for i in range(1, 3)], speed=1, damage=1)
+        super().__init__(x, y, 60, 60, [f'assets/corvo{i}.png' for i in range(4)], speed=1, damage=1)
         self.shoot_cooldown = 2000  # Cooldown de 2000 ms (2 segundos) entre tiros
         self.last_shot_time = pygame.time.get_ticks()
         self.score_value = 2
