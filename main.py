@@ -342,7 +342,7 @@ class Boss(AnimatedEntity):
     def update(self, player_x, player_y, game_manager):
         self.perform_attack(game_manager)
         # Atualiza a fase do boss com base em sua vida
-        if self.lives < self.max_lives / 2 and self.phase == 1:
+        if self.lives <= 90 and self.phase == 1:
             self.phase = 2
             # Muda para uma fase mais agressiva
             self.speed += 2
