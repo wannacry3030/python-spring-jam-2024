@@ -377,10 +377,10 @@ class Projectile:
             # Sprite específico para projéteis disparados pelos inimigos comuns
             self.original_sprite = pygame.image.load("assets/pena.png").convert_alpha()
             self.original_sprite = pygame.transform.scale(self.original_sprite, (30,30))  # Ajuste o tamanho conforme necessário
-        else:
+        elif owner == "boss":
             # Sprite padrão para projéteis do boss, se necessário
-            self.original_sprite = pygame.image.load("assets/bossT.png").convert_alpha()
-            self.original_sprite = pygame.transform.scale(self.original_sprite, (50,50))
+            self.original_sprite = pygame.image.load("assets/sting.png").convert_alpha()
+            self.original_sprite = pygame.transform.scale(self.original_sprite, (45,60))
         self.sprite = self.original_sprite
         self.angle_degrees = -math.degrees(angle) - 90
 
