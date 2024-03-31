@@ -109,10 +109,10 @@ class Player(AnimatedEntity):
         super().__init__(x, y, 100, 100, sprite_paths)
         self.speed = 7
         self.lives = 5
-        self.max_health = 200
+        self.max_health = 10
         self.current_health =self.max_health
         self.health_bar = StatusBar(10, 10, 50, 8, (251,242,54), self.max_health)  
-        self.max_mana = 20
+        self.max_mana = 100
         self.current_mana = 20
         self.mana_bar = StatusBar(x, y - 20, 50, 8, (115,122,212), self.max_mana)  # Mana
         self.mana_cost = 10
@@ -371,11 +371,11 @@ class Projectile:
             self.original_sprite = pygame.image.load("assets/semente.png").convert_alpha()
             self.original_sprite = pygame.transform.scale(self.original_sprite, (24,24))
         elif owner == "player" and is_special:
-            self.original_sprite = pygame.image.load("assets/bossT.png").convert_alpha()
+            self.original_sprite = pygame.image.load("assets/leaf.png").convert_alpha()
             self.original_sprite = pygame.transform.scale(self.original_sprite, (100,100))  # Tamanho maior para projéteis especiais
         elif owner == "enemy":
             # Sprite específico para projéteis disparados pelos inimigos comuns
-            self.original_sprite = pygame.image.load("assets/semente.png").convert_alpha()
+            self.original_sprite = pygame.image.load("assets/pena.png").convert_alpha()
             self.original_sprite = pygame.transform.scale(self.original_sprite, (30,30))  # Ajuste o tamanho conforme necessário
         else:
             # Sprite padrão para projéteis do boss, se necessário
@@ -457,6 +457,8 @@ class GameManager:
         speed = 20 if is_special else 15
         radius = 10 if is_special else 5
         damage = 3 if is_special else 1 
+        if owner == "enemy":
+            speed = 5
 
         new_projectile = Projectile(x, y, angle, size, speed, radius, damage, owner)
         self.projectiles.append(new_projectile)
@@ -666,6 +668,11 @@ class GameManager:
                         if not enemy.is_alive():
                             self.enemies.remove(enemy)
                         self.projectiles.remove(projectile)
+                        self.current_score += enemy.score_value
+                        if random.random() < 0.3:  # Exemplo de chance de 30% de dropar vida
+                            self.lives.append(AnimatedLife(enemy.x, enemy.y))
+                        if random.random() < 0.3:  # Exemplo de chance de 30% de dropar mana
+                            self.mana_orbs.append(ManaOrb(enemy.x, enemy.y))
                         break  # Previne múltiplas colisões com o mesmo projétil
                                     
         self.spawn_enemies()
