@@ -109,7 +109,7 @@ class Player(AnimatedEntity):
         super().__init__(x, y, 100, 100, sprite_paths)
         self.speed = 7
         self.lives = 5
-        self.max_health = 10
+        self.max_health = 100
         self.current_health =self.max_health
         self.health_bar = StatusBar(10, 10, 50, 8, (251,242,54), self.max_health)  
         self.max_mana = 100
@@ -346,6 +346,7 @@ class Boss(AnimatedEntity):
             self.phase = 2
             # Muda para uma fase mais agressiva
             self.speed += 2
+            self.attack_cooldown = 1000
             
         
         # Move o boss em direção ao jogador
