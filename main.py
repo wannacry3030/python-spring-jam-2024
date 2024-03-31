@@ -300,8 +300,7 @@ class ShootingEnemy(Enemy):
 
 class Boss(AnimatedEntity):
     def __init__(self, x, y):
-        sprite_paths = [f'assets/boss{i}.png' for i in range(1, 2)]  # Adicione o caminho para os sprites do boss
-        super().__init__(x, y, 150, 150, sprite_paths, 0.2)  # Tamanho e tempo de animação ajustáveis
+        super().__init__(x, y, 150, 150,[f'assets/bee{i}.png' for i in range(4)], 0.2)  # Tamanho e tempo de animação ajustáveis
         self.max_lives = 100
         self.lives = self.max_lives
         self.damage = 3  # Dano que o boss causa
@@ -325,16 +324,17 @@ class Boss(AnimatedEntity):
         self.y += dy * self.speed
 
     def perform_attack(self, game_manager):
-        # Dispara projéteis em várias direções
         current_time = pygame.time.get_ticks()
         if current_time - self.last_attack_time >= self.attack_cooldown:
-            for angle in range(0, 360, 45):  # Exemplo: dispara em 8 direções diferentes
+            for angle in range(0, 360, 45):
                 rad_angle = math.radians(angle)
-                game_manager.spawn_projectile(self.x, self.y, rad_angle, is_special=True, owner="boss")
+                # Aumenta a velocidade para 25 (ou qualquer valor desejado)
+                game_manager.spawn_projectile(self.x, self.y, rad_angle, is_special=True, owner="boss", speed=5)
             self.last_attack_time = current_time
                 
     def draw(self, surface):
         super().draw(surface)
+        self.update_sprites()
         # Calcula a largura da barra de vida com base na vida atual do boss
         life_bar_width = (self.lives / self.max_lives) * self.width
         pygame.draw.rect(surface, (255, 0, 0), (self.x, self.y - 10, life_bar_width, 5))
@@ -449,12 +449,12 @@ class GameManager:
 
     def spawn_boss(self):
         # Condição para spawnar o boss, por exemplo, alcançar um certo score
-        if self.current_score > 100 and self.boss is None and not self.boss_defeated:
+        if self.current_score > 5 and self.boss is None and not self.boss_defeated:
             self.boss = Boss(screen_width // 2, 100)  # Ajuste a posição de spawn
             
-    def spawn_projectile(self, x, y, angle, is_special, owner=""):
+    def spawn_projectile(self, x, y, angle, is_special, owner="",speed=15):
         size = 3 if is_special else 1
-        speed = 20 if is_special else 15
+        # speed = 20 if is_special else 15
         radius = 10 if is_special else 5
         damage = 3 if is_special else 1 
         if owner == "enemy":
