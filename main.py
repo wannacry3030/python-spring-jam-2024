@@ -398,6 +398,13 @@ class GameManager:
         self.data_time = 0
         self.is_night = False
         
+        pygame.mixer.init()
+        self.night_music_playing = False
+        self.day_music = "assets/day.mp3"
+        self.night_music = "assets/night.mp3"
+        pygame.mixer.music.load(self.day_music)  # Carrega a música do dia por padrão
+        pygame.mixer.music.play(-1)         
+        
         self.reset_game()
         
     def reset_game(self):
@@ -660,7 +667,17 @@ class GameManager:
             for enemy in self.enemies:
                 enemy.speed += 1
             self.player.speed = max(1, self.player.speed - 1)  # Garante que a velocidade não seja negativa
-                    
+ 
+        # Se o ciclo mudou para noite e a música noturna ainda não está tocando
+        if self.is_night and not self.night_music_playing:
+            pygame.mixer.music.load(self.night_music)
+            pygame.mixer.music.play(-1)
+            self.night_music_playing = True  # Atualiza a flag para evitar recarregamento contínuo
+        elif not self.is_night and self.night_music_playing:
+            pygame.mixer.music.load(self.day_music)
+            pygame.mixer.music.play(-1)
+            self.night_music_playing = False  # Muda de volta para a música do dia 
+                        
         self.spawn_enemies()
         
     def draw(self,surface):
