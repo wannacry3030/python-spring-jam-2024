@@ -764,18 +764,14 @@ class GameManager:
         if self.boss_defeated and not self.is_night:
             self.is_night = True
             self.fundo_surface = self.fundo_night_surface  # Altera para fundo noturno
-            # Aumenta a velocidade dos inimigos e diminui a do jogador
-            # for enemy in self.enemies:
-            #     enemy.speed += 1
-            # self.player.speed = max(1, self.player.speed - 1)  # Garante que a velocidade não seja negativa
+            
         if self.night_boss_defeated:
             # Transita para o dia
             self.is_night = False
             self.fundo_surface = self.fundo_day_surface
             pygame.mixer.music.load(self.day_music)  # Carrega e toca a música do dia
             pygame.mixer.music.play(-1)
-            self.night_music_playing = False
-        
+
         # Se o ciclo mudou para noite e a música noturna ainda não está tocando
         if self.is_night and not self.night_music_playing:
             pygame.mixer.music.load(self.night_music)
