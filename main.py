@@ -251,22 +251,22 @@ class Enemy(AnimatedEntity):
         return self.lives > 0
 
 class RedEnemy(Enemy):
-    def __init__(self, x, y, speed_modifier =1):
+    def __init__(self, x, y):
         sprite_paths = [f'assets/rat{i}.png' for i in range(3)]
-        super().__init__(x, y, 100, 100, sprite_paths, speed=1 * speed_modifier, damage=2)
+        super().__init__(x, y, 100, 100, sprite_paths, speed=2, damage=2)
         self.lives = 3
         self.score_value = 2
 
 class WhiteEnemy(Enemy):
-    def __init__(self, x, y, speed_modifier =1):
+    def __init__(self, x, y):
         sprite_paths = [f'assets/enemy{i}.png' for i in range(4)]
-        super().__init__(x, y, 84, 36, sprite_paths, speed=0.5 * speed_modifier, damage=1)
+        super().__init__(x, y, 84, 36, sprite_paths, speed=1, damage=1)
         self.lives = 1
         self.score_value = 1
 
 class ShootingEnemy(Enemy):
-    def __init__(self, x, y, speed_modifier =1):
-        super().__init__(x, y, 60, 60, [f'assets/corvo{i}.png' for i in range(4)], speed=1 * speed_modifier, damage=1)
+    def __init__(self, x, y):
+        super().__init__(x, y, 60, 60, [f'assets/corvo{i}.png' for i in range(4)], speed=2, damage=1)
         self.shoot_cooldown = 2000  # Cooldown de 2000 ms (2 segundos)
         self.last_shot_time = pygame.time.get_ticks()
         self.score_value = 2
@@ -351,6 +351,7 @@ class NightBoss(AnimatedEntity):
         self.attack_interval = 1000  # Ataca a cada 1 segundo
         self.last_attack_time = pygame.time.get_ticks()
         self.projectile_angle = 0
+        self.damage = 1
 
     def random_direction(self):
         angle = random.uniform(0, 2 * math.pi)
@@ -413,7 +414,6 @@ class Projectile:
             self.original_sprite = pygame.image.load("assets/sting.png").convert_alpha()
             self.original_sprite = pygame.transform.scale(self.original_sprite, (45,60))
         elif owner == "night_boss":  # Adiciona a condição para o NightBoss
-            # Carrega e configura o sprite para os projéteis do NightBoss
             self.original_sprite = pygame.image.load("assets/leaf.png").convert_alpha()  # Caminho para o sprite do projétil noturno
             self.original_sprite = pygame.transform.scale(self.original_sprite, (50,50))  # Ajuste o tamanho conforme necessário
 
@@ -436,6 +436,7 @@ class GameManager:
         self.screen_height = screen_height
         self.boss = None
         self.night_boss = None
+        self.night_boss_defeated = False
         self.current_score = 0
         self.high_score = self.load_high_score()
         self.mana_recharge_rate = 0.03
@@ -468,6 +469,7 @@ class GameManager:
     def reset_game(self):
         self.game_over = False
         self.boss_defeated = False
+        self.night_boss_defeated = False
         self.is_night = False
         self.fundo_surface = self.fundo_day_surface
         self.boss = None
@@ -509,7 +511,11 @@ class GameManager:
             self.boss = Boss(screen_width // 2, 100)  # posição de spawn
     
     def spawn_night_boss(self):
-        self.night_boss = NightBoss(screen_width // 2, screen_height // 4)
+        # Somente spawnar o NightBoss se ainda não foi derrotado e as outras condições forem atendidas
+        if not self.night_boss and not self.night_boss_defeated:
+            self.night_boss = NightBoss(self.screen_width // 2, self.screen_height // 4)
+
+
             
     def spawn_projectile(self, x, y, angle, is_special, owner="",speed=15):
         size = 3 if is_special else 1
@@ -549,16 +555,15 @@ class GameManager:
                     
     def spawn_enemies(self):
         # Define o modificador de velocidade baseado no ciclo atual
-        speed_modifier = 2 if self.is_night else 1
 
         if len(self.enemies) < 5 and random.randint(0, 60) == 0:
-            enemy = WhiteEnemy(random.randint(0, screen_width - 50), random.randint(0, screen_height - 50), speed_modifier)
+            enemy = WhiteEnemy(random.randint(0, screen_width - 50), random.randint(0, screen_height - 50))
             self.enemies.append(enemy)
         if len(self.enemies) < 5 and random.randint(0, 120) == 0:
-            enemy = RedEnemy(random.randint(0, screen_width - 50), random.randint(0, screen_height - 50), speed_modifier)
+            enemy = RedEnemy(random.randint(0, screen_width - 50), random.randint(0, screen_height - 50))
             self.enemies.append(enemy)
         if len(self.enemies) < 5 and random.randint(0, 1000) < 5:
-            enemy = ShootingEnemy(random.randint(0, screen_width - 60), random.randint(0, screen_height - 60), speed_modifier)
+            enemy = ShootingEnemy(random.randint(0, screen_width - 60), random.randint(0, screen_height - 60))
             self.enemies.append(enemy)
           
     def apply_knock_back(self, enemy, intensity=70):
@@ -627,16 +632,18 @@ class GameManager:
         if self.boss:
             self.boss.update(self.player.x, self.player.y, self)
 
-        if self.current_score > 10 and self.boss_defeated and self.is_night and self.night_boss is None:
+        if self.current_score > 10 and self.boss_defeated and not self.night_boss:
             self.spawn_night_boss()
+
 
         # Atualiza o NightBoss, se ele existir
         if self.night_boss:
             self.night_boss.update(self)
-            if self.night_boss.lives <= 0:
-                # Lógica para quando o NightBoss é derrotado
+            if self.night_boss and self.night_boss.lives <= 0:
                 self.night_boss = None
-                # Implemente quaisquer ações adicionais necessárias aqui
+                self.night_boss_defeated = True  # Marca como derrotado
+                            # Implemente quaisquer ações adicionais necessárias aqui
+                
         # Checagem de colisão entre o jogador e o boss
         if self.boss and pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height).colliderect(pygame.Rect(self.boss.x, self.boss.y, self.boss.width, self.boss.height)):
             damage = self.boss.damage  # Supondo que boss.damage contém o dano que o boss causa
@@ -644,7 +651,15 @@ class GameManager:
             # Correção: Criação do indicador de dano ao jogador quando atingido pelo boss
             self.damage_indicators.append(DamageIndicator(self.player.x, self.player.y, damage, self.font))
 
-        # Processamento de projéteis
+
+        if self.night_boss and pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height).colliderect(pygame.Rect(self.night_boss.x, self.night_boss.y, self.night_boss.width, self.night_boss.height)):
+            damage = self.night_boss.damage  # Aqui, supomos que o NightBoss tem um atributo 'damage'
+            self.player.lose_life(damage)
+            self.damage_indicators.append(DamageIndicator(self.player.x, self.player.y, damage, self.font))
+
+
+
+                # Processamento de projéteis
         for projectile in self.projectiles[:]:
             projectile.move()
             if not (0 <= projectile.x <= screen_width and 0 <= projectile.y <= screen_height):
@@ -662,14 +677,29 @@ class GameManager:
                 self.projectiles.remove(projectile)
                 if self.boss.lives <= 0:
                     self.boss_defeated = True
-                    self.boss = None  # Remove o boss do jogo
-
+                    self.boss = None  # Remove o boss do jogosssss
+            if projectile.owner == "player":
+                # Verifica se o NightBoss existe antes de checar colisões
+                if self.night_boss and proj_rect.colliderect(pygame.Rect(self.night_boss.x, self.night_boss.y, self.night_boss.width, self.night_boss.height)):
+                    self.night_boss.lives -= projectile.damage
+                    self.damage_indicators.append(DamageIndicator(projectile.x, projectile.y, projectile.damage, self.font))
+                    self.projectiles.remove(projectile)
+                    if self.night_boss and self.night_boss.lives <= 0:
+                        self.night_boss = None
+                        self.night_boss_defeated = True
+            elif projectile.owner == "night_boss":
+                # Ignora projéteis do NightBoss colidindo com ele mesmo
+                # Certifique-se de que o NightBoss existe antes de verificar a colisão
+                if self.night_boss and proj_rect.colliderect(pygame.Rect(self.night_boss.x, self.night_boss.y, self.night_boss.width, self.night_boss.height)):
+                    continue
+                            
             # Checagem para projéteis do boss ou inimigos atingindo o jogador
-            elif projectile.owner in ["boss", "enemy"] and proj_rect.colliderect(pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height)):
+            elif projectile.owner in ["boss", "enemy", "night_boss"] and proj_rect.colliderect(pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height)):
                 self.player.lose_life(projectile.damage)
                 # Adiciona indicador de dano ao jogador
-                self.damage_indicators.append(DamageIndicator(self.player.x, self.player.y, projectile.damage, self.font))
+                self.damage_indicators.append(DamageIndicator(projectile.x, projectile.y, projectile.damage, self.font))
                 self.projectiles.remove(projectile)
+
 
         for life in self.lives[:]: 
             if pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height).colliderect(pygame.Rect(life.x, life.y, life.width, life.height)):
@@ -735,10 +765,17 @@ class GameManager:
             self.is_night = True
             self.fundo_surface = self.fundo_night_surface  # Altera para fundo noturno
             # Aumenta a velocidade dos inimigos e diminui a do jogador
-            for enemy in self.enemies:
-                enemy.speed += 1
-            self.player.speed = max(1, self.player.speed - 1)  # Garante que a velocidade não seja negativa
- 
+            # for enemy in self.enemies:
+            #     enemy.speed += 1
+            # self.player.speed = max(1, self.player.speed - 1)  # Garante que a velocidade não seja negativa
+        if self.night_boss_defeated:
+            # Transita para o dia
+            self.is_night = False
+            self.fundo_surface = self.fundo_day_surface
+            pygame.mixer.music.load(self.day_music)  # Carrega e toca a música do dia
+            pygame.mixer.music.play(-1)
+            self.night_music_playing = False
+        
         # Se o ciclo mudou para noite e a música noturna ainda não está tocando
         if self.is_night and not self.night_music_playing:
             pygame.mixer.music.load(self.night_music)
