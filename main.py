@@ -641,7 +641,9 @@ class GameManager:
             self.night_boss.update(self)
             if self.night_boss and self.night_boss.lives <= 0:
                 self.night_boss = None
-                self.night_boss_defeated = True  # Marca como derrotado
+                self.night_boss_defeated = True
+                self.is_night = False
+                self.update_music()# Marca como derrotado
                             # Implemente quaisquer ações adicionais necessárias aqui
                 
         # Checagem de colisão entre o jogador e o boss
@@ -769,20 +771,20 @@ class GameManager:
             # Transita para o dia
             self.is_night = False
             self.fundo_surface = self.fundo_day_surface
-            pygame.mixer.music.load(self.day_music)  # Carrega e toca a música do dia
-            pygame.mixer.music.play(-1)
+            # self.update_music()
+        self.update_music()
+        self.spawn_enemies()
 
-        # Se o ciclo mudou para noite e a música noturna ainda não está tocando
+    def update_music(self):
         if self.is_night and not self.night_music_playing:
             pygame.mixer.music.load(self.night_music)
             pygame.mixer.music.play(-1)
-            self.night_music_playing = True  # Atualiza a flag para evitar recarregamento contínuo
+            self.night_music_playing = True
         elif not self.is_night and self.night_music_playing:
             pygame.mixer.music.load(self.day_music)
             pygame.mixer.music.play(-1)
-            self.night_music_playing = False  # Muda de volta para a música do dia 
-                        
-        self.spawn_enemies()
+            self.night_music_playing = False
+
         
     def draw(self,surface):
         mouse_x, mouse_y = pygame.mouse.get_pos()
