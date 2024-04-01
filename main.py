@@ -391,44 +391,58 @@ class NightBoss(AnimatedEntity):
         pygame.draw.rect(surface, (255, 0, 0), (self.x, self.y - 10, life_bar_width, 5))
       
 class Projectile:
-    def __init__(self, x, y, angle, size=1, speed=15, radius=5, damage=1, owner ="player", is_special=False):
+    def __init__(self, x, y, angle, size=1, speed=15, radius=5, damage=1, owner="player", is_special=False):
         self.x = x
         self.y = y
         self.speed = speed
         self.angle = angle
         self.size = size
         self.radius = radius * self.size
-        self.damage = damage if size == 1 else damage * 3  # Aumenta o dano se for um projétil especial
+        self.damage = damage if size == 1 else damage * 3
         self.owner = owner
+        self.sprites = []
+        self.current_sprite = 0
+        self.last_update = pygame.time.get_ticks()
+        self.animation_speed = 100
         
         if owner == "player" and not is_special:
             self.original_sprite = pygame.image.load("assets/semente.png").convert_alpha()
-            self.original_sprite = pygame.transform.scale(self.original_sprite, (24,24))
+            self.sprites.append(pygame.transform.scale(self.original_sprite, (24,24)))
         elif owner == "player" and is_special:
             self.original_sprite = pygame.image.load("assets/leaf.png").convert_alpha()
-            self.original_sprite = pygame.transform.scale(self.original_sprite, (100,100))
+            self.sprites.append(pygame.transform.scale(self.original_sprite, (100,100)))
         elif owner == "enemy":
             self.original_sprite = pygame.image.load("assets/pena.png").convert_alpha()
-            self.original_sprite = pygame.transform.scale(self.original_sprite, (30,30))
+            self.sprites.append(pygame.transform.scale(self.original_sprite, (30,30)))
         elif owner == "boss":
             self.original_sprite = pygame.image.load("assets/sting.png").convert_alpha()
-            self.original_sprite = pygame.transform.scale(self.original_sprite, (45,60))
+            self.sprites.append(pygame.transform.scale(self.original_sprite, (45,60)))
         elif owner == "night_boss":  # Adiciona a condição para o NightBoss
-            self.original_sprite = pygame.image.load("assets/leaf.png").convert_alpha()  # Caminho para o sprite do projétil noturno
-            self.original_sprite = pygame.transform.scale(self.original_sprite, (50,50))  # Ajuste o tamanho conforme necessário
+            sprite_paths = [f"assets/lua{i}.png" for i in range(4)]  # Ajuste o range conforme o número de sprites
+            self.sprites = [pygame.transform.scale(pygame.image.load(path).convert_alpha(), (50, 50)) for path in sprite_paths]
 
-        self.sprite = self.original_sprite
+        # self.sprite = self.original_sprite
+        self.sprite = self.sprites[self.current_sprite]
         self.angle_degrees = -math.degrees(angle) - 90
+
+    def update(self):
+        now = pygame.time.get_ticks()
+        if now - self.last_update > self.animation_speed:
+            self.last_update = now
+            self.current_sprite = (self.current_sprite + 1) % len(self.sprites)
+            self.sprite = self.sprites[self.current_sprite]
 
     def move(self):
         self.x += self.speed * math.cos(self.angle)
         self.y += self.speed * math.sin(self.angle)
-        
+
     def draw(self, surface):
-        # Rotaciona o sprite baseado no ângulo do tiro cada vez antes de desenhar
-        self.sprite = pygame.transform.rotate(self.original_sprite, self.angle_degrees)
-        rect = self.sprite.get_rect(center=(self.x, self.y))
-        surface.blit(self.sprite, rect.topleft)
+        # Atualiza o sprite antes de desenhar
+        self.update()
+        # Rotaciona o sprite baseado no ângulo do tiro
+        rotated_sprite = pygame.transform.rotate(self.sprite, self.angle_degrees)
+        rect = rotated_sprite.get_rect(center=(self.x, self.y))
+        surface.blit(rotated_sprite, rect.topleft)
         
 class GameManager:
     def __init__(self, screen_width, screen_height):
