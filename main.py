@@ -118,9 +118,17 @@ class Player(AnimatedEntity):
 #atributos special shot --------------------------------------------------------------------_--#
         self.special_shot_cooldown = 3000 # miliseg
         self.last_special_shot_time = 0
+#atributos da aura ------------------------------------------------------------------------#
+        self.aura_mana_cost  =  20
+        self.aura_cooldown = 1
+        self.last_aura_time = 0
+        self.aura = None
+        
         
         self.dash_icon = pygame.transform.scale(pygame.image.load('assets/sprint.png').convert_alpha(), (64, 64))
         self.special_shot_icon = pygame.transform.scale(pygame.image.load('assets/leafsuper.png').convert_alpha(), (64, 64))
+        self.aura_icon = pygame.transform.scale(pygame.image.load('assets/leafsuper.png').convert_alpha(), (64, 64))
+
                 
     def start_dash(self):
         current_time = pygame.time.get_ticks()
@@ -133,27 +141,28 @@ class Player(AnimatedEntity):
                     self.current_mana -= self.mana_cost_for_dash
                     
     def draw_ability_icons(self, surface):
-        icons = [self.dash_icon, self.special_shot_icon]  # Lista de ícones
+        icons = [self.dash_icon, self.special_shot_icon, self.aura_icon]  # Adiciona o ícone da aura
+        cooldowns = [(self.last_dash_time, self.dash_cooldown),
+                    (self.last_special_shot_time, self.special_shot_cooldown),
+                    (self.last_aura_time, self.aura_cooldown * 1000)]  # Adiciona o cooldown da aura
+
         total_width = sum(icon.get_width() for icon in icons) + (len(icons) - 1) * 10  # Espaço entre ícones = 10
         start_x = (screen_width - total_width) / 2  # Centralizar no eixo X
         y = screen_height - 110  # Posição fixa no eixo Y
-        
+
         for index, icon in enumerate(icons):
             x = start_x + index * (icon.get_width() + 10)  # Calcula a posição X para cada ícone
             surface.blit(icon, (x, y))
+
+            # Calcula a razão de cooldown
+            current_time = pygame.time.get_ticks()
+            last_use_time, cooldown_time = cooldowns[index]
+            cooldown_ratio = min(max(current_time - last_use_time, 0) / cooldown_time, 1)
             
-            # Para o Dash o overlay de cooldown 
-            if icon == self.dash_icon:
-                cooldown_ratio = (pygame.time.get_ticks() - self.last_dash_time) / self.dash_cooldown
-                if cooldown_ratio < 1:
-                    cooldown_height = icon.get_height() * (1 - cooldown_ratio)
-                    pygame.draw.rect(surface, (0, 0, 0, 127), (x, y + icon.get_height() - cooldown_height, icon.get_width(), cooldown_height))
-        # Para o projétil especial, desenha o overlay de cooldown
-            if icons[index] == self.special_shot_icon:
-                cooldown_ratio = max(0, min((pygame.time.get_ticks() - self.last_special_shot_time) / self.special_shot_cooldown, 1))
-                if cooldown_ratio < 1:
-                    cooldown_height = icons[index].get_height() * (1 - cooldown_ratio)
-                    pygame.draw.rect(surface, (0, 0, 0, 127), (x, y + icons[index].get_height() - cooldown_height, icons[index].get_width(), cooldown_height))
+            if cooldown_ratio < 1:
+                cooldown_height = icon.get_height() * (1 - cooldown_ratio)
+                pygame.draw.rect(surface, (0, 0, 0, 127), (x, y + icon.get_height() - cooldown_height, icon.get_width(), cooldown_height))
+
 
     def move(self, keys):
         current_time =  pygame.time.get_ticks()
@@ -215,15 +224,53 @@ class Player(AnimatedEntity):
         self.health_bar.draw(surface)
         self.mana_bar.draw(surface)
         self.draw_ability_icons(surface) 
+        if self.aura and self.aura.active:
+                pygame.draw.circle(surface, (0, 255, 255), (int(self.x + self.width / 2), int(self.y + self.height / 2)), self.aura.radius, 1)
+
+class Aura:
+    def __init__(self, owner, duration, radius, damage_per_second, game_manager):
+        # Inclua game_manager como um novo argumento
+        self.owner = owner
+        self.duration = duration
+        self.radius = radius
+        self.damage_per_second = 2
+        self.game_manager = game_manager  # Guarda a referência do game_manager
+        self.active = True
+        self.elapsed_time = 0
+
+    def update(self, delta_time, enemies):
+        if self.active:
+            self.elapsed_time += delta_time
+            if self.elapsed_time >= self.duration:
+                self.active = False
+            else:
+                damage_per_second = self.damage_per_second
+                for enemy in enemies[:]:  # Usar [:] para iterar sobre uma cópia da lista
+                    distance = math.sqrt((self.owner.x + self.owner.width / 2 - enemy.x - enemy.width / 2) ** 2 + (self.owner.y + self.owner.height / 2 - enemy.y - enemy.height / 2) ** 2)
+                    if distance <= self.radius:
+                        damage = damage_per_second * delta_time
+                        enemy.lose_life(damage)
+                        # Verificar se o inimigo ainda está vivo após perder vida
+                        if not enemy.is_alive():
+                            enemies.remove(enemy)  # Remover o inimigo da lista original
+                            # self.current_score += enemy.score_value
+                        # Crie um DamageIndicator aqui
+                        damage_indicator = DamageIndicator(enemy.x, enemy.y, damage, self.game_manager.font)
+                        self.game_manager.damage_indicators.append(damage_indicator)
+                        
+    def draw(self, surface):
+        if self.active:
+            # Desenha a aura ao redor do personagem
+            pygame.draw.circle(surface, (0, 255, 255), (self.owner.x, self.owner.y), self.radius, 1)
 
 class AnimatedLife(AnimatedEntity):
     def __init__(self, x, y):
-        sprite_paths = ['assets/sol1.png', 'assets/sol2.png']
-        super().__init__(x, y, 50, 50, sprite_paths, animation_time=0.3)
+        sprite_paths = [f'assets/sun{i}.png' for i in range(6)]
+        super().__init__(x, y, 64, 64, sprite_paths, animation_time=0.1)
 class ManaOrb(AnimatedEntity):
     def __init__(self, x, y):
         sprite_paths = [f'assets/gota{i}.png' for i in range(6)]
-        super().__init__(x, y, 50, 50, sprite_paths, animation_time=0.3)
+        super().__init__(x, y, 50, 50, sprite_paths, animation_time=0.1)
 
 class Enemy(AnimatedEntity):
     def __init__(self, x, y, width, height, sprite_paths, speed, damage):
@@ -383,6 +430,7 @@ class GameManager:
         pygame.mouse.set_visible(False)
         self.animated_cursor = AnimatedEntity(0, 0, 60, 60, [f'assets/mira{i}.png' for i in range(1,5)], 0.5)
         self.font = pygame.font.Font(None, 36)
+        self.data_time = 0
         
     def reset_game(self):
         self.game_over = False
@@ -448,6 +496,16 @@ class GameManager:
                     self.reset_game() 
                 elif event.key == pygame.K_e:
                     self.player.start_dash()
+                elif event.key == pygame.K_q:  # Detect pressing the 'q' key
+                    current_time = pygame.time.get_ticks()
+                    # Check if there's enough mana and if the cooldown has passed
+                    if (self.player.current_mana >= self.player.aura_mana_cost and 
+                        (self.player.aura is None or not self.player.aura.active) and
+                        current_time - self.player.last_aura_time >= self.player.aura_cooldown * 1000):
+                        self.player.current_mana -= self.player.aura_mana_cost
+                        self.player.last_aura_time = current_time
+                        # Activate the aura here
+                        self.player.aura = Aura(self.player, 10, 500, 5,game_manager)  # Duration of 5s, radius of 100, 1 damage per second
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_x, mouse_y = pygame.mouse.get_pos()
                 # Ajusta para o centro do cursor
@@ -496,23 +554,30 @@ class GameManager:
                     sys.exit()
                 if event.type == pygame.KEYDOWN:
                     waiting_for_input = False
+
+        last_time = pygame.time.get_ticks()  # Inicializa a última marca de tempo
         while True:
+            current_time = pygame.time.get_ticks()  # Obtém a marca de tempo atual
+            self.delta_time = (current_time - last_time) / 1000.0  # Calcula o delta_time em segundos
+            last_time = current_time  # Atualiza a última marca de tempo para a próxima iteração
+
             if self.game_over:
                 self.show_game_over_screen()
             else:
                 keys = pygame.key.get_pressed()
                 self.handle_events()
                 self.spawn_lives()
-                self.update(keys)
+                self.update(keys)  # Agora update pode usar self.delta_time para lógica baseada em tempo real
                 self.draw(screen)
+                
                 # Desenha o FPS na tela
                 fps = clock.get_fps()
                 fps_text = font.render(f"FPS: {fps:.2f}", True, pygame.Color('white'))
                 screen.blit(fps_text, (10,5))
-                # Atualiza a tela
-                pygame.display.flip()
-                # Limita o jogo a 60 FPS
-                clock.tick(60)
+                
+                pygame.display.flip()  # Atualiza a tela
+                clock.tick(60)  # Limita o jogo a 60 FPS
+
            
     def update(self, keys):
         # 1. Atualização do jogador
@@ -624,6 +689,10 @@ class GameManager:
                             self.mana_orbs.append(ManaOrb(enemy.x, enemy.y))
                         break  # Previne múltiplas colisões com o mesmo projétil                         
         self.spawn_enemies()
+        
+        if self.player.aura and self.player.aura.active:
+            self.player.aura.update(self.delta_time, self.enemies)
+
 
     def draw(self,surface):
         mouse_x, mouse_y = pygame.mouse.get_pos()
