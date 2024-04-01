@@ -338,6 +338,56 @@ class Boss(AnimatedEntity):
         # Realiza um ataque periodicamente
         if pygame.time.get_ticks() % 2000 < 50:  # A cada aproximadamente 2 segundos
             self.perform_attack(game_manager)
+ 
+class NightBoss(AnimatedEntity):
+    def __init__(self, x, y):
+        super().__init__(x, y, 150, 150, [f'assets/gota{i}.png' for i in range(6)], animation_time=0.2)
+        self.max_lives = 10
+        self.lives = self.max_lives
+        self.speed = 3
+        self.last_direction_change = pygame.time.get_ticks()
+        self.direction_change_interval = 2000  # Muda de direção a cada 2 segundos
+        self.dx, self.dy = self.random_direction()
+        self.attack_interval = 1000  # Ataca a cada 1 segundo
+        self.last_attack_time = pygame.time.get_ticks()
+        self.projectile_angle = 0
+
+    def random_direction(self):
+        angle = random.uniform(0, 2 * math.pi)
+        return math.cos(angle), math.sin(angle)
+
+    def update(self, game_manager):
+        now = pygame.time.get_ticks()
+        if now - self.last_direction_change > self.direction_change_interval:
+            self.dx, self.dy = self.random_direction()
+            self.last_direction_change = now
+
+        # Movimento
+        self.x += self.dx * self.speed
+        self.y += self.dy * self.speed
+
+        # Mantém dentro da tela
+        self.x = max(0, min(game_manager.screen_width - self.width, self.x))
+        self.y = max(0, min(game_manager.screen_height - self.height, self.y))
+
+        # Ataque
+        if now - self.last_attack_time > self.attack_interval:
+            self.attack(game_manager)
+            self.last_attack_time = now
+
+        self.projectile_angle += 10  # Aumenta o ângulo para o próximo projétil
+
+    def attack(self, game_manager):
+        for i in range(8):  # Dispara 8 projéteis em direções diferentes
+            angle = math.radians(self.projectile_angle + i * 45)  # Espaçamento de 45 graus
+            game_manager.spawn_projectile(self.x + self.width / 2, self.y + self.height / 2, angle, is_special=True, owner="night_boss", speed=2)
+
+    def draw(self, surface):
+        super().draw(surface)
+        self.update_sprites()
+        # Calcula a largura da barra de vida com base na vida atual do NightBoss
+        life_bar_width = (self.lives / self.max_lives) * self.width
+        pygame.draw.rect(surface, (255, 0, 0), (self.x, self.y - 10, life_bar_width, 5))
       
 class Projectile:
     def __init__(self, x, y, angle, size=1, speed=15, radius=5, damage=1, owner ="player", is_special=False):
@@ -362,6 +412,11 @@ class Projectile:
         elif owner == "boss":
             self.original_sprite = pygame.image.load("assets/sting.png").convert_alpha()
             self.original_sprite = pygame.transform.scale(self.original_sprite, (45,60))
+        elif owner == "night_boss":  # Adiciona a condição para o NightBoss
+            # Carrega e configura o sprite para os projéteis do NightBoss
+            self.original_sprite = pygame.image.load("assets/leaf.png").convert_alpha()  # Caminho para o sprite do projétil noturno
+            self.original_sprite = pygame.transform.scale(self.original_sprite, (50,50))  # Ajuste o tamanho conforme necessário
+
         self.sprite = self.original_sprite
         self.angle_degrees = -math.degrees(angle) - 90
 
@@ -376,8 +431,11 @@ class Projectile:
         surface.blit(self.sprite, rect.topleft)
         
 class GameManager:
-    def __init__(self):
+    def __init__(self, screen_width, screen_height):
+        self.screen_width = screen_width
+        self.screen_height = screen_height
         self.boss = None
+        self.night_boss = None
         self.current_score = 0
         self.high_score = self.load_high_score()
         self.mana_recharge_rate = 0.03
@@ -449,6 +507,9 @@ class GameManager:
         # Condição para spawnar o boss
         if self.current_score > 1 and self.boss is None and not self.boss_defeated:
             self.boss = Boss(screen_width // 2, 100)  # posição de spawn
+    
+    def spawn_night_boss(self):
+        self.night_boss = NightBoss(screen_width // 2, screen_height // 4)
             
     def spawn_projectile(self, x, y, angle, is_special, owner="",speed=15):
         size = 3 if is_special else 1
@@ -548,8 +609,7 @@ class GameManager:
                 
                 pygame.display.flip()  # Atualiza a tela
                 clock.tick(60)  # Limita o jogo a 60 FPS
-
-           
+        
     def update(self, keys):
         # 1. Atualização do jogador
         self.player.move(keys)
@@ -562,10 +622,21 @@ class GameManager:
         self.animated_cursor.update_sprites()
         # 2. Tentativa de spawnar o boss
         self.spawn_boss()
-        self.player.speed = 3.5 if self.is_night else 7
+        self.player.speed = 5 if self.is_night else 7
         # 3. Atualizar o boss, se ele existir
         if self.boss:
             self.boss.update(self.player.x, self.player.y, self)
+
+        if self.current_score > 10 and self.boss_defeated and self.is_night and self.night_boss is None:
+            self.spawn_night_boss()
+
+        # Atualiza o NightBoss, se ele existir
+        if self.night_boss:
+            self.night_boss.update(self)
+            if self.night_boss.lives <= 0:
+                # Lógica para quando o NightBoss é derrotado
+                self.night_boss = None
+                # Implemente quaisquer ações adicionais necessárias aqui
         # Checagem de colisão entre o jogador e o boss
         if self.boss and pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height).colliderect(pygame.Rect(self.boss.x, self.boss.y, self.boss.width, self.boss.height)):
             damage = self.boss.damage  # Supondo que boss.damage contém o dano que o boss causa
@@ -716,6 +787,9 @@ class GameManager:
             self.boss.draw(surface)
         self.player.draw(surface)
         
+        if self.night_boss:
+            self.night_boss.draw(screen)
+
         score_text = font.render(f"Score: {self.current_score}", True, WHITE)
         surface.blit(score_text, (screen_width - 180, 10)) 
         high_score_text = font.render(f"High Score: {self.high_score}", True, WHITE)
@@ -747,5 +821,5 @@ def draw_start_screen():
     pygame.display.flip()
 
 if __name__ == "__main__":
-    game_manager = GameManager()
+    game_manager = GameManager(screen_width,screen_height)
     game_manager.run()
