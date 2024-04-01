@@ -10,11 +10,11 @@ screen = pygame.display.set_mode((screen_width, screen_height), pygame.DOUBLEBUF
 pygame.display.set_caption("teste 1")
 game_over_img  = 'assets/gameover.png'
 start_screen_image = 'assets/tela.png'
-fundo_image = 'assets/fundo.png'
-fundo_surface = pygame.image.load(fundo_image).convert_alpha()
+# fundo_image = 'assets/fundo.png'
+# fundo_surface = pygame.image.load(fundo_image).convert_alpha()
 start_screen_surface = pygame.image.load(start_screen_image)
 game_over_surface = pygame.image.load(game_over_img)
-fundo_surface = pygame.transform.scale(fundo_surface,(screen_width,screen_height))
+# fundo_surface = pygame.transform.scale(fundo_surface,(screen_width,screen_height))
 # Cores
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -118,16 +118,11 @@ class Player(AnimatedEntity):
 #atributos special shot --------------------------------------------------------------------_--#
         self.special_shot_cooldown = 3000 # miliseg
         self.last_special_shot_time = 0
-#atributos da aura ------------------------------------------------------------------------#
-        self.aura_mana_cost  =  20
-        self.aura_cooldown = 1
-        self.last_aura_time = 0
-        self.aura = None
-        
+
         
         self.dash_icon = pygame.transform.scale(pygame.image.load('assets/sprint.png').convert_alpha(), (64, 64))
         self.special_shot_icon = pygame.transform.scale(pygame.image.load('assets/leafsuper.png').convert_alpha(), (64, 64))
-        self.aura_icon = pygame.transform.scale(pygame.image.load('assets/leafsuper.png').convert_alpha(), (64, 64))
+        # self.aura_icon = pygame.transform.scale(pygame.image.load('assets/leafsuper.png').convert_alpha(), (64, 64))
 
                 
     def start_dash(self):
@@ -139,12 +134,12 @@ class Player(AnimatedEntity):
                     self.dash_start_time = current_time
                     self.last_dash_time = current_time
                     self.current_mana -= self.mana_cost_for_dash
-                    
+
     def draw_ability_icons(self, surface):
-        icons = [self.dash_icon, self.special_shot_icon, self.aura_icon]  # Adiciona o ícone da aura
+        icons = [self.dash_icon, self.special_shot_icon]  
         cooldowns = [(self.last_dash_time, self.dash_cooldown),
-                    (self.last_special_shot_time, self.special_shot_cooldown),
-                    (self.last_aura_time, self.aura_cooldown * 1000)]  # Adiciona o cooldown da aura
+                    (self.last_special_shot_time, self.special_shot_cooldown),]
+
 
         total_width = sum(icon.get_width() for icon in icons) + (len(icons) - 1) * 10  # Espaço entre ícones = 10
         start_x = (screen_width - total_width) / 2  # Centralizar no eixo X
@@ -217,51 +212,13 @@ class Player(AnimatedEntity):
         self.health_bar.update(self.current_health)  # Atualiza a barra de vida
 
     def is_alive(self):
-        return self.lives > 0
+        return self.current_health > 0
 
     def draw(self, surface):
         super().draw(surface)  # Assume que AnimatedEntity tem um método draw
         self.health_bar.draw(surface)
         self.mana_bar.draw(surface)
         self.draw_ability_icons(surface) 
-        if self.aura and self.aura.active:
-                pygame.draw.circle(surface, (0, 255, 255), (int(self.x + self.width / 2), int(self.y + self.height / 2)), self.aura.radius, 1)
-
-class Aura:
-    def __init__(self, owner, duration, radius, damage_per_second, game_manager):
-        # Inclua game_manager como um novo argumento
-        self.owner = owner
-        self.duration = duration
-        self.radius = radius
-        self.damage_per_second = 2
-        self.game_manager = game_manager  # Guarda a referência do game_manager
-        self.active = True
-        self.elapsed_time = 0
-
-    def update(self, delta_time, enemies):
-        if self.active:
-            self.elapsed_time += delta_time
-            if self.elapsed_time >= self.duration:
-                self.active = False
-            else:
-                damage_per_second = self.damage_per_second
-                for enemy in enemies[:]:  # Usar [:] para iterar sobre uma cópia da lista
-                    distance = math.sqrt((self.owner.x + self.owner.width / 2 - enemy.x - enemy.width / 2) ** 2 + (self.owner.y + self.owner.height / 2 - enemy.y - enemy.height / 2) ** 2)
-                    if distance <= self.radius:
-                        damage = damage_per_second * delta_time
-                        enemy.lose_life(damage)
-                        # Verificar se o inimigo ainda está vivo após perder vida
-                        if not enemy.is_alive():
-                            enemies.remove(enemy)  # Remover o inimigo da lista original
-                            # self.current_score += enemy.score_value
-                        # Crie um DamageIndicator aqui
-                        damage_indicator = DamageIndicator(enemy.x, enemy.y, damage, self.game_manager.font)
-                        self.game_manager.damage_indicators.append(damage_indicator)
-                        
-    def draw(self, surface):
-        if self.active:
-            # Desenha a aura ao redor do personagem
-            pygame.draw.circle(surface, (0, 255, 255), (self.owner.x, self.owner.y), self.radius, 1)
 
 class AnimatedLife(AnimatedEntity):
     def __init__(self, x, y):
@@ -294,22 +251,22 @@ class Enemy(AnimatedEntity):
         return self.lives > 0
 
 class RedEnemy(Enemy):
-    def __init__(self, x, y):
+    def __init__(self, x, y, speed_modifier =1):
         sprite_paths = [f'assets/rat{i}.png' for i in range(3)]
-        super().__init__(x, y, 100, 100, sprite_paths, speed=1, damage=2)
+        super().__init__(x, y, 100, 100, sprite_paths, speed=1 * speed_modifier, damage=2)
         self.lives = 3
         self.score_value = 2
 
 class WhiteEnemy(Enemy):
-    def __init__(self, x, y):
+    def __init__(self, x, y, speed_modifier =1):
         sprite_paths = [f'assets/enemy{i}.png' for i in range(4)]
-        super().__init__(x, y, 84, 36, sprite_paths, speed=0.5, damage=1)
+        super().__init__(x, y, 84, 36, sprite_paths, speed=0.5 * speed_modifier, damage=1)
         self.lives = 1
         self.score_value = 1
 
 class ShootingEnemy(Enemy):
-    def __init__(self, x, y):
-        super().__init__(x, y, 60, 60, [f'assets/corvo{i}.png' for i in range(4)], speed=1, damage=1)
+    def __init__(self, x, y, speed_modifier =1):
+        super().__init__(x, y, 60, 60, [f'assets/corvo{i}.png' for i in range(4)], speed=1 * speed_modifier, damage=1)
         self.shoot_cooldown = 2000  # Cooldown de 2000 ms (2 segundos)
         self.last_shot_time = pygame.time.get_ticks()
         self.score_value = 2
@@ -333,7 +290,7 @@ class ShootingEnemy(Enemy):
 class Boss(AnimatedEntity):
     def __init__(self, x, y):
         super().__init__(x, y, 150, 150,[f'assets/bee{i}.png' for i in range(4)], 0.2)  
-        self.max_lives = 100
+        self.max_lives = 10
         self.lives = self.max_lives
         self.damage = 3  
         self.speed = 2 
@@ -371,10 +328,10 @@ class Boss(AnimatedEntity):
     def update(self, player_x, player_y, game_manager):
         self.perform_attack(game_manager)
         # Atualiza a fase do boss com base em sua vida
-        if self.lives <= 90 and self.phase == 1:
+        if self.lives <= 5 and self.phase == 1:
             self.phase = 2
-            self.speed += 2
-            self.attack_cooldown = 1000
+            self.speed -= 1
+            self.attack_cooldown = 2000
             
         self.move_towards_player(player_x, player_y)
         
@@ -420,7 +377,6 @@ class Projectile:
         
 class GameManager:
     def __init__(self):
-        self.reset_game()
         self.boss = None
         self.current_score = 0
         self.high_score = self.load_high_score()
@@ -429,12 +385,26 @@ class GameManager:
         self.mana_orbs = []
         pygame.mouse.set_visible(False)
         self.animated_cursor = AnimatedEntity(0, 0, 60, 60, [f'assets/mira{i}.png' for i in range(1,5)], 0.5)
+        
+        # Carrega e escala as imagens do fundo
+        self.fundo_day_surface = pygame.image.load('assets/fundo.png').convert()
+        self.fundo_night_surface = pygame.image.load('assets/noite.png').convert()
+        self.fundo_day_surface = pygame.transform.scale(self.fundo_day_surface, (screen_width, screen_height))
+        self.fundo_night_surface = pygame.transform.scale(self.fundo_night_surface, (screen_width, screen_height))
+
+        # Define a superfície de fundo inicial
+        self.fundo_surface = self.fundo_day_surface
         self.font = pygame.font.Font(None, 36)
         self.data_time = 0
+        self.is_night = False
+        
+        self.reset_game()
         
     def reset_game(self):
         self.game_over = False
         self.boss_defeated = False
+        self.is_night = False
+        self.fundo_surface = self.fundo_day_surface
         self.boss = None
         self.current_score = 0
         self.player = Player(screen_width // 2, screen_height // 2)
@@ -470,7 +440,7 @@ class GameManager:
 
     def spawn_boss(self):
         # Condição para spawnar o boss
-        if self.current_score > 5 and self.boss is None and not self.boss_defeated:
+        if self.current_score > 1 and self.boss is None and not self.boss_defeated:
             self.boss = Boss(screen_width // 2, 100)  # posição de spawn
             
     def spawn_projectile(self, x, y, angle, is_special, owner="",speed=15):
@@ -496,16 +466,7 @@ class GameManager:
                     self.reset_game() 
                 elif event.key == pygame.K_e:
                     self.player.start_dash()
-                elif event.key == pygame.K_q:  # Detect pressing the 'q' key
-                    current_time = pygame.time.get_ticks()
-                    # Check if there's enough mana and if the cooldown has passed
-                    if (self.player.current_mana >= self.player.aura_mana_cost and 
-                        (self.player.aura is None or not self.player.aura.active) and
-                        current_time - self.player.last_aura_time >= self.player.aura_cooldown * 1000):
-                        self.player.current_mana -= self.player.aura_mana_cost
-                        self.player.last_aura_time = current_time
-                        # Activate the aura here
-                        self.player.aura = Aura(self.player, 10, 500, 5,game_manager)  # Duration of 5s, radius of 100, 1 damage per second
+                    
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_x, mouse_y = pygame.mouse.get_pos()
                 # Ajusta para o centro do cursor
@@ -519,16 +480,19 @@ class GameManager:
                     self.projectiles.append(projectile)
                     
     def spawn_enemies(self):
+        # Define o modificador de velocidade baseado no ciclo atual
+        speed_modifier = 2 if self.is_night else 1
+
         if len(self.enemies) < 5 and random.randint(0, 60) == 0:
-            enemy = WhiteEnemy(random.randint(0, screen_width - 50), random.randint(0, screen_height - 50))
+            enemy = WhiteEnemy(random.randint(0, screen_width - 50), random.randint(0, screen_height - 50), speed_modifier)
             self.enemies.append(enemy)
         if len(self.enemies) < 5 and random.randint(0, 120) == 0:
-            enemy = RedEnemy(random.randint(0, screen_width - 50), random.randint(0, screen_height - 50))
+            enemy = RedEnemy(random.randint(0, screen_width - 50), random.randint(0, screen_height - 50), speed_modifier)
             self.enemies.append(enemy)
-        if len(self.enemies) < 5 and random.randint(0,1000) < 5:  # Chance de 10% a cada tick
-            enemy = ShootingEnemy(random.randint(0, screen_width - 60), random.randint(0, screen_height - 60))
+        if len(self.enemies) < 5 and random.randint(0, 1000) < 5:
+            enemy = ShootingEnemy(random.randint(0, screen_width - 60), random.randint(0, screen_height - 60), speed_modifier)
             self.enemies.append(enemy)
-            
+          
     def apply_knock_back(self, enemy, intensity=70):
         # Calcular a direção do knock back
         dx = enemy.x - self.player.x
@@ -591,49 +555,44 @@ class GameManager:
         self.animated_cursor.update_sprites()
         # 2. Tentativa de spawnar o boss
         self.spawn_boss()
+        self.player.speed = 3.5 if self.is_night else 7
         # 3. Atualizar o boss, se ele existir
         if self.boss:
             self.boss.update(self.player.x, self.player.y, self)
-        # 4. Checagem de colisão entre o jogador e o boss (aplicar dano ao jogador)
+        # Checagem de colisão entre o jogador e o boss
         if self.boss and pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height).colliderect(pygame.Rect(self.boss.x, self.boss.y, self.boss.width, self.boss.height)):
-            self.player.lose_life(self.boss.damage)
-        # 5. Processamento de projéteis do jogador
+            damage = self.boss.damage  # Supondo que boss.damage contém o dano que o boss causa
+            self.player.lose_life(damage)
+            # Correção: Criação do indicador de dano ao jogador quando atingido pelo boss
+            self.damage_indicators.append(DamageIndicator(self.player.x, self.player.y, damage, self.font))
+
+        # Processamento de projéteis
         for projectile in self.projectiles[:]:
             projectile.move()
-            # Remove projéteis que saíram da tela
             if not (0 <= projectile.x <= screen_width and 0 <= projectile.y <= screen_height):
                 self.projectiles.remove(projectile)
                 continue
-            # Checagem de colisão com o boss para projéteis do jogador
-            if projectile.owner == "player" and self.boss:
-                if pygame.Rect(projectile.x - projectile.radius, projectile.y - projectile.radius, projectile.radius * 2, projectile.radius * 2).colliderect(pygame.Rect(self.boss.x, self.boss.y, self.boss.width, self.boss.height)):
-                    damage_indicator = DamageIndicator(projectile.x, projectile.y, projectile.damage, self.font)
-                    self.damage_indicators.append(damage_indicator)
-                    self.boss.lives -= projectile.damage
-                    self.projectiles.remove(projectile)
-                    if self.boss.lives <= 0:
-                        self.boss = None
-                        self.boss_defeated = True
 
-            # Checagem de colisão com o jogador para projéteis do boss
-            elif projectile.owner == "boss":
-                if pygame.Rect(projectile.x - projectile.radius, projectile.y - projectile.radius, projectile.radius * 2, projectile.radius * 2).colliderect(pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height)):
-                    damage_indicator = DamageIndicator(projectile.x, projectile.y, projectile.damage, self.font)
-                    self.damage_indicators.append(damage_indicator)
-                    self.player.lose_life(projectile.damage)  # Aplica o dano corretamente
-                    self.projectiles.remove(projectile)
-            # checagem de colisao com o jogador dos projeteis do enemy       
-            elif projectile.owner == "enemy"and pygame.Rect(projectile.x - projectile.radius, projectile.y - projectile.radius, projectile.radius * 2, projectile.radius * 2).colliderect(pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height)):
-                if pygame.Rect(projectile.x - projectile.radius, projectile.y - projectile.radius, projectile.radius * 2, projectile.radius * 2).colliderect(pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height)):
-                    damage_indicator = DamageIndicator(projectile.x, projectile.y, projectile.damage, self.font)
-                    self.damage_indicators.append(damage_indicator)
-                    self.damage_indicators.append(damage_indicator)
-                    self.player.lose_life(projectile.damage)  # Aplica o dano corretamente
-                    self.projectiles.remove(projectile)
-                                    
-        if self.player.current_health <= 0:
-            self.game_over = True         
-            
+            proj_rect = pygame.Rect(projectile.x - projectile.radius, projectile.y - projectile.radius, projectile.radius * 2, projectile.radius * 2)
+
+            if projectile.owner == "player" and self.boss and proj_rect.colliderect(pygame.Rect(self.boss.x, self.boss.y, self.boss.width, self.boss.height)):
+                # Aplica dano ao boss
+                self.boss.lives -= projectile.damage
+                # Adiciona indicador de dano
+                self.damage_indicators.append(DamageIndicator(projectile.x, projectile.y, projectile.damage, self.font))
+                # Remove o projétil após colidir com o boss
+                self.projectiles.remove(projectile)
+                if self.boss.lives <= 0:
+                    self.boss_defeated = True
+                    self.boss = None  # Remove o boss do jogo
+
+            # Checagem para projéteis do boss ou inimigos atingindo o jogador
+            elif projectile.owner in ["boss", "enemy"] and proj_rect.colliderect(pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height)):
+                self.player.lose_life(projectile.damage)
+                # Adiciona indicador de dano ao jogador
+                self.damage_indicators.append(DamageIndicator(self.player.x, self.player.y, projectile.damage, self.font))
+                self.projectiles.remove(projectile)
+
         for life in self.lives[:]: 
             if pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height).colliderect(pygame.Rect(life.x, life.y, life.width, life.height)):
                 self.player.current_health += 5  
@@ -673,6 +632,7 @@ class GameManager:
                 if pygame.Rect(projectile.x - projectile.radius, projectile.y - projectile.radius, projectile.radius * 2, projectile.radius * 2).colliderect(pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height)):
                     # Aplica dano ao jogador
                     self.player.lose_life(projectile.damage)
+                    self.damage_indicators.append(DamageIndicator(projectile.x, projectile.y, projectile.damage, self.font))
                     self.projectiles.remove(projectile)
             # Para projéteis do jogador, verificar colisão com inimigos e boss
             elif projectile.owner == "player":
@@ -682,23 +642,32 @@ class GameManager:
                         if not enemy.is_alive():
                             self.enemies.remove(enemy)
                         self.projectiles.remove(projectile)
+                        self.damage_indicators.append(DamageIndicator(projectile.x, projectile.y, projectile.damage, self.font))
                         self.current_score += enemy.score_value
                         if random.random() < 0.3:  # Exemplo de chance de 30% de dropar vida
                             self.lives.append(AnimatedLife(enemy.x, enemy.y))
                         if random.random() < 0.3:  # Exemplo de chance de 30% de dropar mana
                             self.mana_orbs.append(ManaOrb(enemy.x, enemy.y))
-                        break  # Previne múltiplas colisões com o mesmo projétil                         
+                        break  # Previne múltiplas colisões com o mesmo projétil         
+        # Exemplo simplificado de verificação de game over
+        if not self.player.is_alive():
+            self.game_over = True
+        
+        if self.boss_defeated and not self.is_night:
+            self.is_night = True
+            self.fundo_surface = self.fundo_night_surface  # Altera para fundo noturno
+            # Aumenta a velocidade dos inimigos e diminui a do jogador
+            for enemy in self.enemies:
+                enemy.speed += 1
+            self.player.speed = max(1, self.player.speed - 1)  # Garante que a velocidade não seja negativa
+                    
         self.spawn_enemies()
         
-        if self.player.aura and self.player.aura.active:
-            self.player.aura.update(self.delta_time, self.enemies)
-
-
     def draw(self,surface):
         mouse_x, mouse_y = pygame.mouse.get_pos()
         self.animated_cursor.x = mouse_x - self.animated_cursor.width / 2
         self.animated_cursor.y = mouse_y - self.animated_cursor.height / 2
-        screen.blit(fundo_surface, (0, 0))
+        screen.blit(self.fundo_surface, (0, 0))
         
         for indicator in self.damage_indicators[:]:
             indicator.update()
