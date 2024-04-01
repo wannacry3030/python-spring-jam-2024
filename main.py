@@ -341,7 +341,7 @@ class Boss(AnimatedEntity):
  
 class NightBoss(AnimatedEntity):
     def __init__(self, x, y):
-        super().__init__(x, y, 150, 150, [f'assets/gota{i}.png' for i in range(6)], animation_time=0.2)
+        super().__init__(x, y, 150, 150, [f'assets/coruja{i}.png' for i in range(4)], animation_time=0.2)
         self.max_lives = 10
         self.lives = self.max_lives
         self.speed = 3
