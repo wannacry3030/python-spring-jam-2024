@@ -495,6 +495,7 @@ class GameManager:
         self.is_night = False
         self.fundo_surface = self.fundo_day_surface
         self.boss = None
+        self.night_boss = None
         self.current_score = 0
         self.player = Player(screen_width // 2, screen_height // 2)
         self.enemies = []
@@ -536,8 +537,6 @@ class GameManager:
         # Somente spawnar o NightBoss se ainda não foi derrotado e as outras condições forem atendidas
         if not self.night_boss and not self.night_boss_defeated:
             self.night_boss = NightBoss(self.screen_width // 2, self.screen_height // 4)
-
-
             
     def spawn_projectile(self, x, y, angle, is_special, owner="",speed=15):
         size = 3 if is_special else 1
@@ -711,14 +710,15 @@ class GameManager:
                     if self.night_boss and self.night_boss.lives <= 0:
                         self.night_boss = None
                         self.night_boss_defeated = True
+                        
             elif projectile.owner == "night_boss":
                 # Ignora projéteis do NightBoss colidindo com ele mesmo
                 # Certifique-se de que o NightBoss existe antes de verificar a colisão
                 if self.night_boss and proj_rect.colliderect(pygame.Rect(self.night_boss.x, self.night_boss.y, self.night_boss.width, self.night_boss.height)):
                     continue
                             
-            # Checagem para projéteis do boss ou inimigos atingindo o jogador
-            elif projectile.owner in ["boss", "enemy", "night_boss"] and proj_rect.colliderect(pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height)):
+            # Checagem para projéteis do boss, inimigos comuns ou Night Boss atingindo o jogador
+            if projectile.owner in ["boss", "enemy", "night_boss"] and proj_rect.colliderect(pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height)):
                 self.player.lose_life(projectile.damage)
                 # Adiciona indicador de dano ao jogador
                 self.damage_indicators.append(DamageIndicator(projectile.x, projectile.y, projectile.damage, self.font))
