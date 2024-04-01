@@ -253,20 +253,20 @@ class Enemy(AnimatedEntity):
 class RedEnemy(Enemy):
     def __init__(self, x, y):
         sprite_paths = [f'assets/rat{i}.png' for i in range(3)]
-        super().__init__(x, y, 100, 100, sprite_paths, speed=2, damage=2)
+        super().__init__(x, y, 100, 100, sprite_paths, speed=1, damage=2)
         self.lives = 3
         self.score_value = 2
 
 class WhiteEnemy(Enemy):
     def __init__(self, x, y):
         sprite_paths = [f'assets/enemy{i}.png' for i in range(4)]
-        super().__init__(x, y, 84, 36, sprite_paths, speed=1, damage=1)
+        super().__init__(x, y, 84, 36, sprite_paths, speed=0.5, damage=1)
         self.lives = 1
         self.score_value = 1
 
 class ShootingEnemy(Enemy):
     def __init__(self, x, y):
-        super().__init__(x, y, 60, 60, [f'assets/corvo{i}.png' for i in range(4)], speed=2, damage=1)
+        super().__init__(x, y, 60, 60, [f'assets/corvo{i}.png' for i in range(4)], speed=1, damage=1)
         self.shoot_cooldown = 2000  # Cooldown de 2000 ms (2 segundos)
         self.last_shot_time = pygame.time.get_ticks()
         self.score_value = 2
@@ -352,6 +352,7 @@ class NightBoss(AnimatedEntity):
         self.last_attack_time = pygame.time.get_ticks()
         self.projectile_angle = 0
         self.damage = 1
+        self.phase = 1
 
     def random_direction(self):
         angle = random.uniform(0, 2 * math.pi)
@@ -371,12 +372,19 @@ class NightBoss(AnimatedEntity):
         self.x = max(0, min(game_manager.screen_width - self.width, self.x))
         self.y = max(0, min(game_manager.screen_height - self.height, self.y))
 
+
+
         # Ataque
         if now - self.last_attack_time > self.attack_interval:
             self.attack(game_manager)
             self.last_attack_time = now
 
         self.projectile_angle += 10  # Aumenta o ângulo para o próximo projétil
+
+        if self.lives <= 5 and self.phase == 1:
+            self.phase = 2
+            self.speed += 8
+            self.attack_cooldown = 5
 
     def attack(self, game_manager):
         for i in range(8):  # Dispara 8 projéteis em direções diferentes
