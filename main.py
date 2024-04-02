@@ -12,6 +12,7 @@ game_over_img  = 'assets/gameover.png'
 start_screen_image = 'assets/tela.png'
 end_screen_image = pygame.image.load('assets/aurora.png').convert_alpha()
 # fundo_image = 'assets/fundo.png'
+
 # fundo_surface = pygame.image.load(fundo_image).convert_alpha()
 fundo_aurora_surface = pygame.transform.scale(end_screen_image,(screen_width, screen_height))
 start_screen_surface = pygame.image.load(start_screen_image)
@@ -292,9 +293,9 @@ class ShootingEnemy(Enemy):
 class Boss(AnimatedEntity):
     def __init__(self, x, y):
         super().__init__(x, y, 150, 150,[f'assets/bee{i}.png' for i in range(4)], 0.2)  
-        self.max_lives = 10
+        self.max_lives = 6
         self.lives = self.max_lives
-        self.damage = 3  
+        self.damage = 0.1  
         self.speed = 2 
         self.attack_pattern = 0
         self.phase = 1
@@ -344,7 +345,7 @@ class Boss(AnimatedEntity):
 class NightBoss(AnimatedEntity):
     def __init__(self, x, y):
         super().__init__(x, y, 150, 150, [f'assets/coruja{i}.png' for i in range(4)], animation_time=0.2)
-        self.max_lives = 10
+        self.max_lives = 6
         self.lives = self.max_lives
         self.speed = 3
         self.last_direction_change = pygame.time.get_ticks()
@@ -404,7 +405,7 @@ class DragaoAncestral(AnimatedEntity):
     def __init__(self, x, y):
         sprite_paths = [f'assets/lastboss{i}.png' for i in range(4)]  # Substitua com os caminhos corretos para suas sprites
         super().__init__(x, y, 150, 150, sprite_paths, animation_time=0.2)
-        self.max_lives = 10
+        self.max_lives = 6
         self.lives = self.max_lives
         self.speed = 2
         self.attack_cooldown = 2000  # 3 segundos entre ataques
@@ -436,7 +437,7 @@ class DragaoAncestral(AnimatedEntity):
             game_manager.projectiles.append(projectile)
 
     def perform_call_of_the_elders(self, game_manager):
-        meteor_count = 3  # Define quantos meteoros serão invocados por vez
+        meteor_count = 5  # Define quantos meteoros serão invocados por vez
         for _ in range(meteor_count):
             # Escolha posições aleatórias para cada meteoro cair
             x_pos = random.randint(0, game_manager.screen_width)
@@ -444,17 +445,17 @@ class DragaoAncestral(AnimatedEntity):
             angle = math.pi / 2  # Ângulo para cair verticalmente
             
             # Criação do projétil do meteoro
-            projectile = Projectile(x_pos, y_pos, angle, size=2, speed=7, radius=15, damage=3, owner="cogu", is_special=True)
+            projectile = Projectile(x_pos, y_pos, angle, size=2, speed=4, radius=15, damage=3, owner="cogu", is_special=True)
             game_manager.projectiles.append(projectile)
 
     def perform_spiral_attack(self, game_manager):
         # Define o número de projéteis no ataque espiral
-        numero_de_projeteis = 26  # 36 --- Exemplo: cria um círculo completo com um projétil a cada 10 graus
+        numero_de_projeteis = 16  # 36 --- Exemplo: cria um círculo completo com um projétil a cada 10 graus
         angulo_inicial = 0  # Começando de 0 graus
 
         for i in range(numero_de_projeteis):
             angulo = math.radians(angulo_inicial + (i * (360 / numero_de_projeteis)))
-            game_manager.spawn_projectile(self.x + self.width / 2, self.y + self.height / 2, angulo, is_special=True, owner="cogu", speed=1)
+            game_manager.spawn_projectile(self.x + self.width / 2, self.y + self.height / 2, angulo, is_special=True, owner="cogu", speed=2)
 
     def perform_attack(self):
         # Implemente os ataques do Dragão Ancestral aqui
@@ -554,6 +555,7 @@ class GameManager:
         self.night_boss_defeated = False
         self.aurora_started = False
         self.dragao_ancestral = None
+        self.dragao_defeated = False
         
         self.current_score = 0
         self.high_score = self.load_high_score()
@@ -590,6 +592,7 @@ class GameManager:
         self.game_over = False
         self.boss_defeated = False
         self.night_boss_defeated = False
+        self.dragao_defeated = False
         self.is_night = False
         self.fundo_surface = self.fundo_day_surface
         self.boss = None
@@ -754,13 +757,16 @@ class GameManager:
 
         if self.current_score > 10 and self.boss_defeated and not self.night_boss:
             self.spawn_night_boss()
-        if self.aurora_started and self.dragao_ancestral is None:
-            # Substitua os valores de x e y conforme desejado para a posição inicial do Dragão Ancestral
-            self.dragao_ancestral = DragaoAncestral(self.screen_width // 2, 100)  
+        if self.aurora_started and not self.dragao_ancestral and self.current_score > 25:
+            self.dragao_ancestral = DragaoAncestral(self.screen_width // 2, 100) 
         if self.dragao_ancestral:
             self.dragao_ancestral.update(self.player.x, self.player.y, self)
         if self.dragao_ancestral and self.dragao_ancestral.lives <= 0:
-            self.show_end_screen(screen)
+                self.dragao_defeated = True
+                self.dragao_ancestral  = None
+                self.show_end_screen(screen)
+            
+
 
 
         # Atualiza o NightBoss, se ele existir
@@ -1017,6 +1023,8 @@ class GameManager:
 def draw_start_screen():
     screen.blit(start_screen_surface, (0, 0))
     pygame.display.flip()
+
+
 
 if __name__ == "__main__":
     game_manager = GameManager(screen_width,screen_height)
