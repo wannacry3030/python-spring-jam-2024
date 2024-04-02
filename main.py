@@ -766,7 +766,6 @@ class GameManager:
             pygame.display.flip()  # Atualiza a tela
             clock.tick(60)  # Limita o jogo a 60 FPS
 
-
     def update(self, keys):
         # 1. Atualização do jogador
         pygame.mixer.init()
@@ -1035,7 +1034,6 @@ class GameManager:
                 
         self.animated_cursor.draw(surface)
         pygame.display.flip()
-
 
     def show_game_over_screen(self):
         screen.blit(game_over_surface, (0, 0))
