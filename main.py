@@ -5,6 +5,7 @@ import random
 import time
 
 pygame.init()
+pygame.mixer.init()
 screen_width, screen_height = 1500, 750
 screen = pygame.display.set_mode((screen_width, screen_height), pygame.DOUBLEBUF)
 pygame.display.set_caption("teste 1")
@@ -581,6 +582,8 @@ class GameManager:
         self.night_music_playing = False
         self.day_music = "assets/day.mp3"
         self.night_music = "assets/night.mp3"
+        self.energy_sound = pygame.mixer.Sound("assets/pick.wav")
+        self.water_sound = pygame.mixer.Sound("assets/pick2.wav")
         
         pygame.mixer.music.load(self.day_music)  
         pygame.mixer.music.play(-1)         
@@ -763,6 +766,7 @@ class GameManager:
 
     def update(self, keys):
         # 1. Atualização do jogador
+        pygame.mixer.init()
         if self.is_paused:
             return
         self.player.move(keys)
@@ -889,7 +893,9 @@ class GameManager:
                 self.player.current_health += 5  
                 self.player.current_health = min(self.player.current_health, self.player.max_health)
                 self.player.health_bar.update(self.player.current_health)
-                self.lives.remove(life) 
+                
+                self.lives.remove(life)
+                self.energy_sound.play() 
                                      
         for enemy in self.enemies[:]:
             if pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height).colliderect(pygame.Rect(enemy.x, enemy.y, enemy.width, enemy.height)):
