@@ -597,6 +597,7 @@ class GameManager:
         self.boss_defeated = False
         self.night_boss_defeated = False
         self.dragao_defeated = False
+        self.aurora_started = False
         self.is_night = False
         self.fundo_surface = self.fundo_day_surface
         self.boss = None
@@ -799,8 +800,9 @@ class GameManager:
 
         if self.current_score > 10 and self.boss_defeated and not self.night_boss:
             self.spawn_night_boss()
-        if self.aurora_started and not self.dragao_ancestral and self.current_score > 25:
-            self.dragao_ancestral = DragaoAncestral(self.screen_width // 2, 100) 
+        if self.current_score > 25 and not self.dragao_ancestral and self.aurora_started:
+            # Só spawnar o dragao_ancestral se a aurora já tiver começado
+            self.dragao_ancestral = DragaoAncestral(self.screen_width // 2, 100)
         if self.dragao_ancestral:
             self.dragao_ancestral.update(self.player.x, self.player.y, self)
         if self.dragao_ancestral and self.dragao_ancestral.lives <= 0:
