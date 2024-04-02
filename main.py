@@ -404,7 +404,7 @@ class DragaoAncestral(AnimatedEntity):
         super().__init__(x, y, 150, 150, sprite_paths, animation_time=0.2)
         self.lives = 20  # Ajuste conforme a dificuldade desejada
         self.speed = 2
-        self.attack_cooldown = 3000  # 3 segundos entre ataques
+        self.attack_cooldown = 1000  # 3 segundos entre ataques
         self.last_attack_time = 0
         
     def move_towards_player(self, player_x, player_y):
@@ -418,6 +418,31 @@ class DragaoAncestral(AnimatedEntity):
         self.x += dx * self.speed
         self.y += dy * self.speed
 
+    def perform_fire_breath(self, game_manager):
+        angle_to_player = math.atan2(game_manager.player.y - self.y, game_manager.player.x - self.x)
+        fire_breath_count = 5  # Quantidade de chamas lançadas
+        fire_breath_spread = 0.3  # Variação no ângulo para espalhar o fogo
+        
+        for i in range(fire_breath_count):
+            angle_variation = random.uniform(-fire_breath_spread, fire_breath_spread)
+            fire_angle = angle_to_player + angle_variation
+            
+            # Ajuste os parâmetros do projétil conforme necessário
+            projectile = Projectile(self.x, self.y, fire_angle, size=2, speed=3, radius=10, damage=2, owner="boss", is_special=True)
+            game_manager.projectiles.append(projectile)
+
+    def perform_call_of_the_elders(self, game_manager):
+        meteor_count = 3  # Define quantos meteoros serão invocados por vez
+        for _ in range(meteor_count):
+            # Escolha posições aleatórias para cada meteoro cair
+            x_pos = random.randint(0, game_manager.screen_width)
+            y_pos = 0  # Começa do topo da tela
+            angle = math.pi / 2  # Ângulo para cair verticalmente
+            
+            # Criação do projétil do meteoro
+            projectile = Projectile(x_pos, y_pos, angle, size=2, speed=7, radius=15, damage=3, owner="boss", is_special=True)
+            game_manager.projectiles.append(projectile)
+
     def perform_attack(self):
         # Implemente os ataques do Dragão Ancestral aqui
         pass
@@ -426,8 +451,14 @@ class DragaoAncestral(AnimatedEntity):
         # Atualiza posição e verifica se pode atacar
         self.move_towards_player(player_x, player_y)  # Se desejar que ele siga o jogador
         current_time = pygame.time.get_ticks()
+        # Verifica se é hora de realizar o ataque Chamado dos Anciãos
         if current_time - self.last_attack_time > self.attack_cooldown:
-            self.perform_attack()
+            # Aqui você pode decidir aleatoriamente qual ataque realizar
+            attack_choice = random.choice(["fire_breath", "call_of_the_elders"])
+            if attack_choice == "fire_breath":
+                self.perform_fire_breath(game_manager)
+            else:
+                self.perform_call_of_the_elders(game_manager)
             self.last_attack_time = current_time
  
       
@@ -533,6 +564,7 @@ class GameManager:
         self.fundo_surface = self.fundo_day_surface
         self.boss = None
         self.night_boss = None
+        self.dragao_ancestral  = None
         self.current_score = 0
         self.player = Player(screen_width // 2, screen_height // 2)
         self.enemies = []
