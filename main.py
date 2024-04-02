@@ -587,7 +587,8 @@ class GameManager:
         self.shoot_sound = pygame.mixer.Sound("assets/tiro.wav")
         
         pygame.mixer.music.load(self.day_music)  
-        pygame.mixer.music.play(-1)         
+        pygame.mixer.music.play(-1)    
+        pygame.mixer.music.set_volume(0.5)     
         
         self.reset_game()
         
@@ -782,6 +783,7 @@ class GameManager:
         
         # Ajusta a velocidade dos inimigos baseado na fase (dia ou noite)
         for enemy in self.enemies:
+            self.update
             if self.is_night:
                 enemy.speed = enemy.original_speed / 2
             else:
@@ -908,6 +910,7 @@ class GameManager:
                              
         for enemy in self.enemies:
             enemy.move_towards_player(self.player.x, self.player.y)  # Atualiza posição dos inimigos
+            enemy.update_sprites()
         
         for orb in self.mana_orbs[:]:
             orb.update_sprites()
