@@ -402,9 +402,10 @@ class DragaoAncestral(AnimatedEntity):
     def __init__(self, x, y):
         sprite_paths = [f'assets/lastboss{i}.png' for i in range(4)]  # Substitua com os caminhos corretos para suas sprites
         super().__init__(x, y, 150, 150, sprite_paths, animation_time=0.2)
-        self.lives = 20  # Ajuste conforme a dificuldade desejada
+        self.max_lives = 10
+        self.lives = self.max_lives
         self.speed = 2
-        self.attack_cooldown = 1000  # 3 segundos entre ataques
+        self.attack_cooldown = 2000  # 3 segundos entre ataques
         self.last_attack_time = 0
         self.angulo_de_ataque = 0
         
@@ -429,7 +430,7 @@ class DragaoAncestral(AnimatedEntity):
             fire_angle = angle_to_player + angle_variation
             
             # Ajuste os parâmetros do projétil conforme necessário
-            projectile = Projectile(self.x, self.y, fire_angle, size=2, speed=3, radius=10, damage=2, owner="boss", is_special=True)
+            projectile = Projectile(self.x, self.y, fire_angle, size=2, speed=3, radius=10, damage=2, owner="cogu", is_special=True)
             game_manager.projectiles.append(projectile)
 
     def perform_call_of_the_elders(self, game_manager):
@@ -441,17 +442,17 @@ class DragaoAncestral(AnimatedEntity):
             angle = math.pi / 2  # Ângulo para cair verticalmente
             
             # Criação do projétil do meteoro
-            projectile = Projectile(x_pos, y_pos, angle, size=2, speed=7, radius=15, damage=3, owner="boss", is_special=True)
+            projectile = Projectile(x_pos, y_pos, angle, size=2, speed=7, radius=15, damage=3, owner="cogu", is_special=True)
             game_manager.projectiles.append(projectile)
 
     def perform_spiral_attack(self, game_manager):
         # Define o número de projéteis no ataque espiral
-        numero_de_projeteis = 36  # Exemplo: cria um círculo completo com um projétil a cada 10 graus
+        numero_de_projeteis = 26  # 36 --- Exemplo: cria um círculo completo com um projétil a cada 10 graus
         angulo_inicial = 0  # Começando de 0 graus
 
         for i in range(numero_de_projeteis):
             angulo = math.radians(angulo_inicial + (i * (360 / numero_de_projeteis)))
-            game_manager.spawn_projectile(self.x + self.width / 2, self.y + self.height / 2, angulo, is_special=True, owner="boss", speed=1)
+            game_manager.spawn_projectile(self.x + self.width / 2, self.y + self.height / 2, angulo, is_special=True, owner="cogu", speed=1)
 
     def perform_attack(self):
         # Implemente os ataques do Dragão Ancestral aqui
@@ -459,9 +460,9 @@ class DragaoAncestral(AnimatedEntity):
 
     def update(self, player_x, player_y, game_manager):
         # Atualiza posição e verifica se pode atacar
-        self.update_sprites()
         self.move_towards_player(player_x, player_y)
         current_time = pygame.time.get_ticks()
+        
         if current_time - self.last_attack_time > self.attack_cooldown:
             # Adicionando 'spiral_attack' às opções de ataque
             attack_choice = random.choice(["fire_breath", "call_of_the_elders", "spiral_attack"])
@@ -472,8 +473,15 @@ class DragaoAncestral(AnimatedEntity):
             elif attack_choice == "spiral_attack":
                 self.perform_spiral_attack(game_manager)  # Implementar este método
             self.last_attack_time = current_time
-    
-      
+    def draw(self, surface):
+            super().draw(surface)  # Chama o método draw da classe base para desenhar o sprite
+            self.update_sprites()  # Atualiza para o próximo sprite, se necessário
+            
+            # Renderiza a barra de vida
+            vida_porcentagem = self.lives / self.max_lives
+            life_bar_width = vida_porcentagem * self.width
+            pygame.draw.rect(surface, (255, 0, 0), (self.x, self.y - 20, life_bar_width, 10))    
+        
 class Projectile:
     def __init__(self, x, y, angle, size=1, speed=15, radius=5, damage=1, owner="player", is_special=False):
         self.x = x
@@ -504,6 +512,9 @@ class Projectile:
         elif owner == "night_boss":  # Adiciona a condição para o NightBoss
             sprite_paths = [f"assets/lua{i}.png" for i in range(4)]  # Ajuste o range conforme o número de sprites
             self.sprites = [pygame.transform.scale(pygame.image.load(path).convert_alpha(), (50, 50)) for path in sprite_paths]
+        elif owner == "cogu":
+            self.original_sprite = pygame.image.load("assets/veneno.png").convert_alpha()
+            self.sprites.append(pygame.transform.scale(self.original_sprite, (60,60)))
 
         # self.sprite = self.original_sprite
         self.sprite = self.sprites[self.current_sprite]
@@ -554,6 +565,7 @@ class GameManager:
         self.fundo_day_surface = pygame.image.load('assets/fundo.png').convert()
         self.fundo_night_surface = pygame.image.load('assets/noite.png').convert()
         self.fundo_aurora_surface = pygame.image.load('assets/aurora.png').convert()
+        self.end_screen_image = pygame.image.load('assets/aurora.png').convert()
         
         self.fundo_aurora_surface = pygame.transform.scale(self.fundo_aurora_surface,(screen_width, screen_height))
         self.fundo_day_surface = pygame.transform.scale(self.fundo_day_surface, (screen_width, screen_height))
@@ -746,7 +758,8 @@ class GameManager:
             self.dragao_ancestral = DragaoAncestral(self.screen_width // 2, 100)  
         if self.dragao_ancestral:
             self.dragao_ancestral.update(self.player.x, self.player.y, self)
-
+        if self.dragao_ancestral and self.dragao_ancestral.lives <= 0:
+            self.show_end_screen(screen)
 
 
         # Atualiza o NightBoss, se ele existir
@@ -793,6 +806,7 @@ class GameManager:
                 if self.boss.lives <= 0:
                     self.boss_defeated = True
                     self.boss = None  # Remove o boss do jogosssss
+            
             if projectile.owner == "player":
                 # Verifica se o NightBoss existe antes de checar colisões
                 if self.night_boss and proj_rect.colliderect(pygame.Rect(self.night_boss.x, self.night_boss.y, self.night_boss.width, self.night_boss.height)):
@@ -802,6 +816,17 @@ class GameManager:
                     if self.night_boss and self.night_boss.lives <= 0:
                         self.night_boss = None
                         self.night_boss_defeated = True
+
+            if projectile.owner == "player" and self.dragao_ancestral:
+                dragao_rect = pygame.Rect(self.dragao_ancestral.x, self.dragao_ancestral.y, self.dragao_ancestral.width, self.dragao_ancestral.height)
+                if proj_rect.colliderect(dragao_rect):
+                    self.dragao_ancestral.lives -= projectile.damage
+                    self.damage_indicators.append(DamageIndicator(projectile.x, projectile.y, projectile.damage, self.font))
+                    self.projectiles.remove(projectile)
+                    if self.dragao_ancestral.lives <= 0:
+                        # Handle dragao_ancestral defeat here
+                        pass
+
                         
             elif projectile.owner == "night_boss":
                 # Ignora projéteis do NightBoss colidindo com ele mesmo
@@ -810,7 +835,7 @@ class GameManager:
                     continue
                             
             # Checagem para projéteis do boss, inimigos comuns ou Night Boss atingindo o jogador
-            if projectile.owner in ["boss", "enemy", "night_boss"] and proj_rect.colliderect(pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height)):
+            if projectile.owner in ["boss", "enemy", "night_boss", "cogu"] and proj_rect.colliderect(pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height)):
                 self.player.lose_life(projectile.damage)
                 # Adiciona indicador de dano ao jogador
                 self.damage_indicators.append(DamageIndicator(projectile.x, projectile.y, projectile.damage, self.font))
@@ -899,8 +924,7 @@ class GameManager:
             pygame.mixer.music.load(self.day_music)
             pygame.mixer.music.play(-1)
             self.night_music_playing = False
-
-        
+  
     def draw(self,surface):
         mouse_x, mouse_y = pygame.mouse.get_pos()
         self.animated_cursor.x = mouse_x - self.animated_cursor.width / 2
@@ -969,6 +993,25 @@ class GameManager:
                     elif event.key == pygame.K_SPACE:
                         self.reset_game()
                         return  # Retorna ao jogo
+
+    def show_end_screen(self, surface):
+        surface.blit(end_screen_image, (0, 0))  # Ajuste a posição conforme necessário
+        pygame.display.update()  # Atualiza a tela para mostrar a imagem
+
+        # Espera pelo input do jogador para reiniciar ou sair
+        waiting_for_input = True
+        while waiting_for_input:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    exit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:  # Supondo que SPACE reinicia o jogo
+                        self.reset_game()  # Reinicia o jogo
+                        waiting_for_input = False
+                    elif event.key == pygame.K_ESCAPE:  # Supondo que ESC saia do jogo
+                        pygame.quit()
+                        exit()
             
 def draw_start_screen():
     screen.blit(start_screen_surface, (0, 0))
