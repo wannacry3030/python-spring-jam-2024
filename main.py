@@ -549,6 +549,7 @@ class GameManager:
         
         self.screen_width = screen_width
         self.screen_height = screen_height
+        self.is_paused = False
         
         self.boss = None
         self.night_boss = None
@@ -650,6 +651,20 @@ class GameManager:
         new_projectile = Projectile(x, y, angle, size, speed, radius, damage, owner)
         self.projectiles.append(new_projectile)
 
+    def draw_pause_screen(self, surface):
+        # Cria um efeito de "escurecimento" da tela para dar foco na tela de pausa
+        pause_overlay = pygame.Surface((self.screen_width, self.screen_height))
+        pause_overlay.fill((0, 0, 0))
+        pause_overlay.set_alpha(128)  # Semi-transparente
+        surface.blit(pause_overlay, (0, 0))
+
+        # Texto indicando que o jogo está pausado
+        font = pygame.font.Font(None, 74)
+        text = font.render('Jogo Pausado', True, (255, 255, 255))
+        text_rect = text.get_rect(center=(self.screen_width/2, self.screen_height/2))
+        surface.blit(text, text_rect)
+
+
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -663,6 +678,14 @@ class GameManager:
                     self.reset_game() 
                 elif event.key == pygame.K_e:
                     self.player.start_dash()
+                if event.key == pygame.K_p:  # Usando P para pausar/despausar
+                    self.is_paused = not self.is_paused
+                    if self.is_paused:
+                        # Pausar música ou sons
+                        pygame.mixer.music.pause()
+                    else:
+                        # Retomar música ou sons
+                        pygame.mixer.music.unpause()
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -715,31 +738,40 @@ class GameManager:
                 if event.type == pygame.KEYDOWN:
                     waiting_for_input = False
 
+        self.is_paused = False  # Inicializa a variável de pausa
+
         last_time = pygame.time.get_ticks()  # Inicializa a última marca de tempo
         while True:
             current_time = pygame.time.get_ticks()  # Obtém a marca de tempo atual
             self.delta_time = (current_time - last_time) / 1000.0  # Calcula o delta_time em segundos
             last_time = current_time  # Atualiza a última marca de tempo para a próxima iteração
 
+            self.handle_events()  # Garanta que este método possa alterar self.is_paused
+
             if self.game_over:
                 self.show_game_over_screen()
-            else:
+            elif not self.is_paused:
                 keys = pygame.key.get_pressed()
-                self.handle_events()
                 self.spawn_lives()
-                self.update(keys)  # Agora update pode usar self.delta_time para lógica baseada em tempo real
-                self.draw(screen)
-                
-                # Desenha o FPS na tela
-                fps = clock.get_fps()
-                fps_text = font.render(f"FPS: {fps:.2f}", True, pygame.Color('white'))
-                screen.blit(fps_text, (10,5))
-                
-                pygame.display.flip()  # Atualiza a tela
-                clock.tick(60)  # Limita o jogo a 60 FPS
+                self.update(keys)  # Sua lógica de atualização do jogo
+            else:
+                self.draw_pause_screen(screen)  # Método para desenhar a tela de pausa
+            
+            self.draw(screen)  # Desenha o estado atual do jogo
+            
+            # Desenha o FPS na tela
+            fps = clock.get_fps()
+            fps_text = font.render(f"FPS: {fps:.2f}", True, pygame.Color('white'))
+            screen.blit(fps_text, (10,5))
+            
+            pygame.display.flip()  # Atualiza a tela
+            clock.tick(60)  # Limita o jogo a 60 FPS
+
 
     def update(self, keys):
         # 1. Atualização do jogador
+        if self.is_paused:
+            return
         self.player.move(keys)
         self.player.update_sprites()
         self.player.current_mana = min(self.player.current_mana + self.mana_recharge_rate, self.player.max_mana)
