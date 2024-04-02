@@ -406,6 +406,7 @@ class DragaoAncestral(AnimatedEntity):
         self.speed = 2
         self.attack_cooldown = 1000  # 3 segundos entre ataques
         self.last_attack_time = 0
+        self.angulo_de_ataque = 0
         
     def move_towards_player(self, player_x, player_y):
         # Calcula a direção em direção ao jogador
@@ -443,6 +444,14 @@ class DragaoAncestral(AnimatedEntity):
             projectile = Projectile(x_pos, y_pos, angle, size=2, speed=7, radius=15, damage=3, owner="boss", is_special=True)
             game_manager.projectiles.append(projectile)
 
+    def perform_spiral_attack(self, game_manager):
+        # Define o número de projéteis no ataque espiral
+        numero_de_projeteis = 36  # Exemplo: cria um círculo completo com um projétil a cada 10 graus
+        angulo_inicial = 0  # Começando de 0 graus
+
+        for i in range(numero_de_projeteis):
+            angulo = math.radians(angulo_inicial + (i * (360 / numero_de_projeteis)))
+            game_manager.spawn_projectile(self.x + self.width / 2, self.y + self.height / 2, angulo, is_special=True, owner="boss", speed=1)
 
     def perform_attack(self):
         # Implemente os ataques do Dragão Ancestral aqui
@@ -450,18 +459,20 @@ class DragaoAncestral(AnimatedEntity):
 
     def update(self, player_x, player_y, game_manager):
         # Atualiza posição e verifica se pode atacar
-        self.move_towards_player(player_x, player_y)  # Se desejar que ele siga o jogador
+        self.update_sprites()
+        self.move_towards_player(player_x, player_y)
         current_time = pygame.time.get_ticks()
-        # Verifica se é hora de realizar o ataque Chamado dos Anciãos
         if current_time - self.last_attack_time > self.attack_cooldown:
-            # Aqui você pode decidir aleatoriamente qual ataque realizar
-            attack_choice = random.choice(["fire_breath", "call_of_the_elders"])
+            # Adicionando 'spiral_attack' às opções de ataque
+            attack_choice = random.choice(["fire_breath", "call_of_the_elders", "spiral_attack"])
             if attack_choice == "fire_breath":
                 self.perform_fire_breath(game_manager)
-            else:
+            elif attack_choice == "call_of_the_elders":
                 self.perform_call_of_the_elders(game_manager)
+            elif attack_choice == "spiral_attack":
+                self.perform_spiral_attack(game_manager)  # Implementar este método
             self.last_attack_time = current_time
- 
+    
       
 class Projectile:
     def __init__(self, x, y, angle, size=1, speed=15, radius=5, damage=1, owner="player", is_special=False):
@@ -674,7 +685,7 @@ class GameManager:
         new_y = enemy.y + (dy / dist) * intensity
         # Assegurar que o inimigo não saia da tela
         enemy.x = max(0, min(screen_width - enemy.width, new_x))
-        enemy.y = max(0, min(screen_height - enemy.height, new_y)))
+        enemy.y = max(0, min(screen_height - enemy.height, new_y))
 
     def run(self):
         clock = pygame.time.Clock()
