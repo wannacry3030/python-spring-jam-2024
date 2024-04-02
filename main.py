@@ -397,6 +397,32 @@ class NightBoss(AnimatedEntity):
         # Calcula a largura da barra de vida com base na vida atual do NightBoss
         life_bar_width = (self.lives / self.max_lives) * self.width
         pygame.draw.rect(surface, (255, 0, 0), (self.x, self.y - 10, life_bar_width, 5))
+ 
+class DragaoAncestral(AnimatedEntity):
+    def __init__(self, x, y):
+        sprite_paths = [f'assets/dragao{i}.png' for i in range(1, 5)]  # Substitua com os caminhos corretos para suas sprites
+        super().__init__(x, y, 150, 150, sprite_paths, animation_time=0.2)
+        self.lives = 20  # Ajuste conforme a dificuldade desejada
+        self.speed = 2
+        self.attack_cooldown = 3000  # 3 segundos entre ataques
+        self.last_attack_time = 0
+        
+    def move(self):
+        # Implemente o movimento do Dragão Ancestral aqui
+        pass
+
+    def perform_attack(self):
+        # Implemente os ataques do Dragão Ancestral aqui
+        pass
+
+    def update(self, player_x, player_y, game_manager):
+        # Atualiza posição e verifica se pode atacar
+        self.move_towards_player(player_x, player_y)  # Se desejar que ele siga o jogador
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_attack_time > self.attack_cooldown:
+            self.perform_attack()
+            self.last_attack_time = current_time
+ 
       
 class Projectile:
     def __init__(self, x, y, angle, size=1, speed=15, radius=5, damage=1, owner="player", is_special=False):
@@ -470,6 +496,8 @@ class GameManager:
         # Carrega e escala as imagens do fundo
         self.fundo_day_surface = pygame.image.load('assets/fundo.png').convert()
         self.fundo_night_surface = pygame.image.load('assets/noite.png').convert()
+        self.fundo_aurora_surface = pygame.image.load('assets/aurora.png').convert()
+        self.fundo_aurora_surface = pygame.transform.scale(self.fundo_aurora_surface,(screen_width, screen_height))
         self.fundo_day_surface = pygame.transform.scale(self.fundo_day_surface, (screen_width, screen_height))
         self.fundo_night_surface = pygame.transform.scale(self.fundo_night_surface, (screen_width, screen_height))
 
@@ -792,7 +820,7 @@ class GameManager:
         if self.night_boss_defeated:
             # Transita para o dia
             self.is_night = False
-            self.fundo_surface = self.fundo_day_surface
+            self.fundo_surface = self.fundo_aurora_surface
             # self.update_music()
         self.update_music()
         self.spawn_enemies()
