@@ -443,6 +443,7 @@ class DragaoAncestral(AnimatedEntity):
             projectile = Projectile(x_pos, y_pos, angle, size=2, speed=7, radius=15, damage=3, owner="boss", is_special=True)
             game_manager.projectiles.append(projectile)
 
+
     def perform_attack(self):
         # Implemente os ataques do Dragão Ancestral aqui
         pass
@@ -518,40 +519,45 @@ class Projectile:
         
 class GameManager:
     def __init__(self, screen_width, screen_height):
+        pygame.mixer.init()
+        pygame.mouse.set_visible(False)
+        
         self.screen_width = screen_width
         self.screen_height = screen_height
+        
         self.boss = None
         self.night_boss = None
         self.night_boss_defeated = False
         self.aurora_started = False
         self.dragao_ancestral = None
+        
         self.current_score = 0
         self.high_score = self.load_high_score()
+        
         self.mana_recharge_rate = 0.03
         self.damage_indicators = []
         self.mana_orbs = []
-        pygame.mouse.set_visible(False)
+        
         self.animated_cursor = AnimatedEntity(0, 0, 60, 60, [f'assets/mira{i}.png' for i in range(1,5)], 0.5)
         
-        # Carrega e escala as imagens do fundo
         self.fundo_day_surface = pygame.image.load('assets/fundo.png').convert()
         self.fundo_night_surface = pygame.image.load('assets/noite.png').convert()
         self.fundo_aurora_surface = pygame.image.load('assets/aurora.png').convert()
+        
         self.fundo_aurora_surface = pygame.transform.scale(self.fundo_aurora_surface,(screen_width, screen_height))
         self.fundo_day_surface = pygame.transform.scale(self.fundo_day_surface, (screen_width, screen_height))
         self.fundo_night_surface = pygame.transform.scale(self.fundo_night_surface, (screen_width, screen_height))
-
-        # Define a superfície de fundo inicial
+        
         self.fundo_surface = self.fundo_day_surface
         self.font = pygame.font.Font(None, 36)
         self.data_time = 0
         self.is_night = False
         
-        pygame.mixer.init()
         self.night_music_playing = False
         self.day_music = "assets/day.mp3"
         self.night_music = "assets/night.mp3"
-        pygame.mixer.music.load(self.day_music)  # Carrega a música do dia por padrão
+        
+        pygame.mixer.music.load(self.day_music)  
         pygame.mixer.music.play(-1)         
         
         self.reset_game()
@@ -564,7 +570,7 @@ class GameManager:
         self.fundo_surface = self.fundo_day_surface
         self.boss = None
         self.night_boss = None
-        self.dragao_ancestral  = None
+        self.dragao_ancestral = None
         self.current_score = 0
         self.player = Player(screen_width // 2, screen_height // 2)
         self.enemies = []
@@ -601,12 +607,12 @@ class GameManager:
         # Condição para spawnar o boss
         if self.current_score > 1 and self.boss is None and not self.boss_defeated:
             self.boss = Boss(screen_width // 2, 100)  # posição de spawn
-    
+
     def spawn_night_boss(self):
         # Somente spawnar o NightBoss se ainda não foi derrotado e as outras condições forem atendidas
         if not self.night_boss and not self.night_boss_defeated:
             self.night_boss = NightBoss(self.screen_width // 2, self.screen_height // 4)
-            
+
     def spawn_projectile(self, x, y, angle, is_special, owner="",speed=15):
         size = 3 if is_special else 1
         radius = 10 if is_special else 5
@@ -616,7 +622,7 @@ class GameManager:
 
         new_projectile = Projectile(x, y, angle, size, speed, radius, damage, owner)
         self.projectiles.append(new_projectile)
-                        
+
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -630,7 +636,7 @@ class GameManager:
                     self.reset_game() 
                 elif event.key == pygame.K_e:
                     self.player.start_dash()
-                    
+
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_x, mouse_y = pygame.mouse.get_pos()
                 # Ajusta para o centro do cursor
@@ -642,7 +648,7 @@ class GameManager:
                     projectile = self.player.shoot(adjusted_x, adjusted_y, is_special=True)
                 if projectile:
                     self.projectiles.append(projectile)
-                    
+
     def spawn_enemies(self):
         # Define o modificador de velocidade baseado no ciclo atual
 
@@ -655,7 +661,7 @@ class GameManager:
         if len(self.enemies) < 5 and random.randint(0, 1000) < 5:
             enemy = ShootingEnemy(random.randint(0, screen_width - 60), random.randint(0, screen_height - 60))
             self.enemies.append(enemy)
-          
+
     def apply_knock_back(self, enemy, intensity=70):
         # Calcular a direção do knock back
         dx = enemy.x - self.player.x
@@ -668,8 +674,8 @@ class GameManager:
         new_y = enemy.y + (dy / dist) * intensity
         # Assegurar que o inimigo não saia da tela
         enemy.x = max(0, min(screen_width - enemy.width, new_x))
-        enemy.y = max(0, min(screen_height - enemy.height, new_y))
-        
+        enemy.y = max(0, min(screen_height - enemy.height, new_y)))
+
     def run(self):
         clock = pygame.time.Clock()
         draw_start_screen()
@@ -704,7 +710,7 @@ class GameManager:
                 
                 pygame.display.flip()  # Atualiza a tela
                 clock.tick(60)  # Limita o jogo a 60 FPS
-        
+
     def update(self, keys):
         # 1. Atualização do jogador
         self.player.move(keys)
