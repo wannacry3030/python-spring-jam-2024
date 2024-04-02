@@ -400,16 +400,23 @@ class NightBoss(AnimatedEntity):
  
 class DragaoAncestral(AnimatedEntity):
     def __init__(self, x, y):
-        sprite_paths = [f'assets/dragao{i}.png' for i in range(1, 5)]  # Substitua com os caminhos corretos para suas sprites
+        sprite_paths = [f'assets/lastboss{i}.png' for i in range(4)]  # Substitua com os caminhos corretos para suas sprites
         super().__init__(x, y, 150, 150, sprite_paths, animation_time=0.2)
         self.lives = 20  # Ajuste conforme a dificuldade desejada
         self.speed = 2
         self.attack_cooldown = 3000  # 3 segundos entre ataques
         self.last_attack_time = 0
         
-    def move(self):
-        # Implemente o movimento do Dragão Ancestral aqui
-        pass
+    def move_towards_player(self, player_x, player_y):
+        # Calcula a direção em direção ao jogador
+        dx = player_x - self.x
+        dy = player_y - self.y
+        dist = math.sqrt(dx**2 + dy**2)
+        # Normaliza a direção
+        dx, dy = dx / dist, dy / dist
+        # Aplica a velocidade ao boss e move-o em direção ao jogador
+        self.x += dx * self.speed
+        self.y += dy * self.speed
 
     def perform_attack(self):
         # Implemente os ataques do Dragão Ancestral aqui
@@ -485,6 +492,8 @@ class GameManager:
         self.boss = None
         self.night_boss = None
         self.night_boss_defeated = False
+        self.aurora_started = False
+        self.dragao_ancestral = None
         self.current_score = 0
         self.high_score = self.load_high_score()
         self.mana_recharge_rate = 0.03
@@ -683,6 +692,12 @@ class GameManager:
 
         if self.current_score > 10 and self.boss_defeated and not self.night_boss:
             self.spawn_night_boss()
+        if self.aurora_started and self.dragao_ancestral is None:
+            # Substitua os valores de x e y conforme desejado para a posição inicial do Dragão Ancestral
+            self.dragao_ancestral = DragaoAncestral(self.screen_width // 2, 100)  
+        if self.dragao_ancestral:
+            self.dragao_ancestral.update(self.player.x, self.player.y, self)
+
 
 
         # Atualiza o NightBoss, se ele existir
@@ -821,6 +836,7 @@ class GameManager:
             # Transita para o dia
             self.is_night = False
             self.fundo_surface = self.fundo_aurora_surface
+            self.aurora_started = True
             # self.update_music()
         self.update_music()
         self.spawn_enemies()
@@ -874,6 +890,10 @@ class GameManager:
         
         if self.night_boss:
             self.night_boss.draw(screen)
+        if self.dragao_ancestral:
+            self.dragao_ancestral.draw(screen)
+
+
 
         score_text = font.render(f"Score: {self.current_score}", True, WHITE)
         surface.blit(score_text, (screen_width - 180, 10)) 
