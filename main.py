@@ -584,6 +584,7 @@ class GameManager:
         self.night_music = "assets/night.mp3"
         self.energy_sound = pygame.mixer.Sound("assets/pick.wav")
         self.water_sound = pygame.mixer.Sound("assets/pick2.wav")
+        self.shoot_sound = pygame.mixer.Sound("assets/tiro.wav")
         
         pygame.mixer.music.load(self.day_music)  
         pygame.mixer.music.play(-1)         
@@ -686,6 +687,7 @@ class GameManager:
                         pygame.mixer.music.unpause()
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
+                self.shoot_sound.play()
                 mouse_x, mouse_y = pygame.mouse.get_pos()
                 # Ajusta para o centro do cursor
                 adjusted_x = mouse_x - self.animated_cursor.width / 2
@@ -917,6 +919,7 @@ class GameManager:
                 self.mana_orbs.remove(orb)
                 self.player.current_mana += 5  # Adiciona mana ao jogador
                 self.player.current_mana = min(self.player.current_mana, self.player.max_mana)  # Garante que a mana não exceda o máximo
+                self.water_sound.play()
         
         for projectile in self.projectiles[:]:
             projectile.move()
