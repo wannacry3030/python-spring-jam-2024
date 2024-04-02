@@ -10,8 +10,8 @@ screen = pygame.display.set_mode((screen_width, screen_height), pygame.DOUBLEBUF
 pygame.display.set_caption("teste 1")
 game_over_img  = 'assets/gameover.png'
 start_screen_image = 'assets/tela.png'
-end_screen_image = pygame.image.load('assets/aurora.png').convert_alpha()
-# fundo_image = 'assets/fundo.png'
+end_screen_image = pygame.image.load('assets/grats.png').convert_alpha()
+
 
 # fundo_surface = pygame.image.load(fundo_image).convert_alpha()
 fundo_aurora_surface = pygame.transform.scale(end_screen_image,(screen_width, screen_height))
@@ -114,7 +114,7 @@ class Player(AnimatedEntity):
         self.dash_speed = 30
         self.mana_cost_for_dash = 10
         self.dash_duration = 200 # milissegundos
-        self.dash_cooldown = 3000# 10 segundos
+        self.dash_cooldown = 2000# 10 segundos
         self.last_dash_time = 0
         self.is_dashing = False
         self.dash_start_time = 0
@@ -122,12 +122,9 @@ class Player(AnimatedEntity):
         self.special_shot_cooldown = 3000 # miliseg
         self.last_special_shot_time = 0
 
-        
         self.dash_icon = pygame.transform.scale(pygame.image.load('assets/sprint.png').convert_alpha(), (64, 64))
         self.special_shot_icon = pygame.transform.scale(pygame.image.load('assets/leafsuper.png').convert_alpha(), (64, 64))
-        # self.aura_icon = pygame.transform.scale(pygame.image.load('assets/leafsuper.png').convert_alpha(), (64, 64))
-
-                
+               
     def start_dash(self):
         current_time = pygame.time.get_ticks()
         if current_time - self.last_dash_time >= self.dash_cooldown:
@@ -160,7 +157,6 @@ class Player(AnimatedEntity):
             if cooldown_ratio < 1:
                 cooldown_height = icon.get_height() * (1 - cooldown_ratio)
                 pygame.draw.rect(surface, (0, 0, 0, 127), (x, y + icon.get_height() - cooldown_height, icon.get_width(), cooldown_height))
-
 
     def move(self, keys):
         current_time =  pygame.time.get_ticks()
@@ -235,6 +231,7 @@ class ManaOrb(AnimatedEntity):
 class Enemy(AnimatedEntity):
     def __init__(self, x, y, width, height, sprite_paths, speed, damage):
         super().__init__(x, y, width, height, sprite_paths)
+        self.original_speed = speed
         self.speed = speed
         self.lives = 3
         self.damage = damage
@@ -256,7 +253,7 @@ class Enemy(AnimatedEntity):
 class RedEnemy(Enemy):
     def __init__(self, x, y):
         sprite_paths = [f'assets/rat{i}.png' for i in range(3)]
-        super().__init__(x, y, 100, 100, sprite_paths, speed=1, damage=2)
+        super().__init__(x, y, 100, 100, sprite_paths, speed=1.5, damage=2)
         self.lives = 3
         self.score_value = 2
 
@@ -570,7 +567,8 @@ class GameManager:
         self.fundo_day_surface = pygame.image.load('assets/fundo.png').convert()
         self.fundo_night_surface = pygame.image.load('assets/noite.png').convert()
         self.fundo_aurora_surface = pygame.image.load('assets/aurora.png').convert()
-        
+
+       
         self.fundo_aurora_surface = pygame.transform.scale(self.fundo_aurora_surface,(screen_width, screen_height))
         self.fundo_day_surface = pygame.transform.scale(self.fundo_day_surface, (screen_width, screen_height))
         self.fundo_night_surface = pygame.transform.scale(self.fundo_night_surface, (screen_width, screen_height))
@@ -652,18 +650,15 @@ class GameManager:
         self.projectiles.append(new_projectile)
 
     def draw_pause_screen(self, surface):
-        # Cria um efeito de "escurecimento" da tela para dar foco na tela de pausa
         pause_overlay = pygame.Surface((self.screen_width, self.screen_height))
         pause_overlay.fill((0, 0, 0))
         pause_overlay.set_alpha(128)  # Semi-transparente
         surface.blit(pause_overlay, (0, 0))
-
-        # Texto indicando que o jogo está pausado
-        font = pygame.font.Font(None, 74)
-        text = font.render('Jogo Pausado', True, (255, 255, 255))
-        text_rect = text.get_rect(center=(self.screen_width/2, self.screen_height/2))
+        
+        # Substitua isso pela imagem de comandos se desejar
+        text = self.font.render('Jogo Pausado', True, (255, 255, 255))
+        text_rect = text.get_rect(center=(self.screen_width // 2, self.screen_height // 2))
         surface.blit(text, text_rect)
-
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -681,7 +676,7 @@ class GameManager:
                 if event.key == pygame.K_p:  # Usando P para pausar/despausar
                     self.is_paused = not self.is_paused
                     if self.is_paused:
-                        # Pausar música ou sons
+
                         pygame.mixer.music.pause()
                     else:
                         # Retomar música ou sons
@@ -739,7 +734,6 @@ class GameManager:
                     waiting_for_input = False
 
         self.is_paused = False  # Inicializa a variável de pausa
-
         last_time = pygame.time.get_ticks()  # Inicializa a última marca de tempo
         while True:
             current_time = pygame.time.get_ticks()  # Obtém a marca de tempo atual
@@ -750,15 +744,14 @@ class GameManager:
 
             if self.game_over:
                 self.show_game_over_screen()
-            elif not self.is_paused:
+            if not self.game_over and not self.is_paused:
                 keys = pygame.key.get_pressed()
+                self.handle_events()
                 self.spawn_lives()
-                self.update(keys)  # Sua lógica de atualização do jogo
-            else:
-                self.draw_pause_screen(screen)  # Método para desenhar a tela de pausa
-            
-            self.draw(screen)  # Desenha o estado atual do jogo
-            
+                self.update(keys)  # Garanta que a pausa é checada dentro deste método também
+                self.draw(screen)
+
+                
             # Desenha o FPS na tela
             fps = clock.get_fps()
             fps_text = font.render(f"FPS: {fps:.2f}", True, pygame.Color('white'))
@@ -780,9 +773,19 @@ class GameManager:
         self.animated_cursor.x = mouse_x
         self.animated_cursor.y = mouse_y
         self.animated_cursor.update_sprites()
+        
+        # Ajusta a velocidade dos inimigos baseado na fase (dia ou noite)
+        for enemy in self.enemies:
+            if self.is_night:
+                enemy.speed = enemy.original_speed / 2
+            else:
+                enemy.speed = enemy.original_speed
+
+
+            
         # 2. Tentativa de spawnar o boss
         self.spawn_boss()
-        self.player.speed = 5 if self.is_night else 7
+        self.player.speed = 3 if self.is_night else 6
         # 3. Atualizar o boss, se ele existir
         if self.boss:
             self.boss.update(self.player.x, self.player.y, self)
@@ -964,56 +967,63 @@ class GameManager:
             pygame.mixer.music.play(-1)
             self.night_music_playing = False
   
-    def draw(self,surface):
+    def draw(self, surface):
         mouse_x, mouse_y = pygame.mouse.get_pos()
         self.animated_cursor.x = mouse_x - self.animated_cursor.width / 2
         self.animated_cursor.y = mouse_y - self.animated_cursor.height / 2
-        screen.blit(self.fundo_surface, (0, 0))
+        surface.blit(self.fundo_surface, (0, 0))
         
         for indicator in self.damage_indicators[:]:
             indicator.update()
-            indicator.draw(screen)
+            indicator.draw(surface)  # Alterado para 'surface' em vez de 'screen'
             if indicator.is_expired():
-                self.damage_indicators.remove(indicator)  
-                
+                self.damage_indicators.remove(indicator)
+        
         for projectile in self.projectiles:
-            projectile.draw(screen)
-            
+            projectile.draw(surface)  # Alterado para 'surface' em vez de 'screen'
+        
         for enemy in self.enemies:
-            enemy.draw(screen)
-            enemy.update_sprites()
-            
-        for enemy in self.enemies:
+            enemy.draw(surface)  # Alterado para 'surface' em vez de 'screen'
             if isinstance(enemy, ShootingEnemy):
                 enemy.update(self.player.x, self.player.y, self)
-            else:
-                enemy.move_towards_player(self.player.x, self.player.y)
-                    
+        
         for life in self.lives:
-            life.draw(screen)
+            life.draw(surface)  # Alterado para 'surface' em vez de 'screen'
             life.update_sprites()
-            
+        
         for orb in self.mana_orbs:
-            screen.blit(orb.sprites[orb.current_sprite], (orb.x, orb.y))
-
+            surface.blit(orb.sprites[orb.current_sprite], (orb.x, orb.y))  # Alterado para 'surface' em vez de 'screen'
+        
         if self.boss:
             self.boss.draw(surface)
         self.player.draw(surface)
         
         if self.night_boss:
-            self.night_boss.draw(screen)
+            self.night_boss.draw(surface)  # Alterado para 'surface'
         if self.dragao_ancestral:
-            self.dragao_ancestral.draw(screen)
+            self.dragao_ancestral.draw(surface)  # Alterado para 'surface'
 
+        score_text = self.font.render(f"Score: {self.current_score}", True, WHITE)
+        surface.blit(score_text, (self.screen_width - 180, 10))
+        high_score_text = self.font.render(f"High Score: {self.high_score}", True, WHITE)
+        surface.blit(high_score_text, (self.screen_width - 180, 30))
 
-
-        score_text = font.render(f"Score: {self.current_score}", True, WHITE)
-        surface.blit(score_text, (screen_width - 180, 10)) 
-        high_score_text = font.render(f"High Score: {self.high_score}", True, WHITE)
-        surface.blit(high_score_text, (screen_width - 180, 30))  
+        if self.is_paused:
+            # Aqui chamamos o método que desenha a tela de pausa
+            self.draw_pause_screen(surface)
+        
+        # Isso garante que qualquer coisa desenhada após este ponto seja exibida por cima do jogo
+        # Então, se o draw_pause_screen não estiver funcionando, isso deveria funcionar como um teste
+        if self.is_paused:
+            # Exemplo simples para teste: Desenha um retângulo vermelho grande no meio da tela
+            pygame.draw.rect(surface, (255, 0, 0), (100, 100, self.screen_width - 200, self.screen_height - 200))
+            pause_text = self.font.render('PAUSA', True, (255, 255, 255))
+            text_rect = pause_text.get_rect(center=(self.screen_width // 2, self.screen_height // 2))
+            surface.blit(pause_text, text_rect)
+                
         self.animated_cursor.draw(surface)
-        # Atualiza a tela inteira
         pygame.display.flip()
+
 
     def show_game_over_screen(self):
         screen.blit(game_over_surface, (0, 0))
