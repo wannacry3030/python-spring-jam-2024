@@ -10,8 +10,10 @@ screen = pygame.display.set_mode((screen_width, screen_height), pygame.DOUBLEBUF
 pygame.display.set_caption("teste 1")
 game_over_img  = 'assets/gameover.png'
 start_screen_image = 'assets/tela.png'
+end_screen_image = pygame.image.load('assets/aurora.png').convert_alpha()
 # fundo_image = 'assets/fundo.png'
 # fundo_surface = pygame.image.load(fundo_image).convert_alpha()
+fundo_aurora_surface = pygame.transform.scale(end_screen_image,(screen_width, screen_height))
 start_screen_surface = pygame.image.load(start_screen_image)
 game_over_surface = pygame.image.load(game_over_img)
 # fundo_surface = pygame.transform.scale(fundo_surface,(screen_width,screen_height))
@@ -565,7 +567,6 @@ class GameManager:
         self.fundo_day_surface = pygame.image.load('assets/fundo.png').convert()
         self.fundo_night_surface = pygame.image.load('assets/noite.png').convert()
         self.fundo_aurora_surface = pygame.image.load('assets/aurora.png').convert()
-        self.end_screen_image = pygame.image.load('assets/aurora.png').convert()
         
         self.fundo_aurora_surface = pygame.transform.scale(self.fundo_aurora_surface,(screen_width, screen_height))
         self.fundo_day_surface = pygame.transform.scale(self.fundo_day_surface, (screen_width, screen_height))
