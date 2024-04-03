@@ -581,8 +581,10 @@ class GameManager:
         self.is_night = False
         
         self.night_music_playing = False
+        self.final_music_playing = False
         self.day_music = "assets/day.mp3"
         self.night_music = "assets/night.mp3"
+        self.final_music = "assets/final.mp3"
         self.energy_sound = pygame.mixer.Sound("assets/pick.wav")
         self.water_sound = pygame.mixer.Sound("assets/pick2.wav")
         self.shoot_sound = pygame.mixer.Sound("assets/tiro.wav")
@@ -599,6 +601,7 @@ class GameManager:
         self.night_boss_defeated = False
         self.dragao_defeated = False
         self.aurora_started = False
+        self.final_music_playing = False
         self.is_night = False
         self.fundo_surface = self.fundo_day_surface
         self.boss = None
@@ -902,6 +905,7 @@ class GameManager:
                 
                 self.lives.remove(life)
                 self.energy_sound.play() 
+                self.energy_sound.set_volume(0.2)
                                      
         for enemy in self.enemies[:]:
             if pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height).colliderect(pygame.Rect(enemy.x, enemy.y, enemy.width, enemy.height)):
@@ -925,6 +929,7 @@ class GameManager:
                 self.player.current_mana += 10  # Adiciona mana ao jogador
                 self.player.current_mana = min(self.player.current_mana, self.player.max_mana)  # Garante que a mana não exceda o máximo
                 self.water_sound.play()
+                self.water_sound.set_volume(0.2)
         
         for projectile in self.projectiles[:]:
             projectile.move()
@@ -972,14 +977,22 @@ class GameManager:
         self.spawn_enemies()
 
     def update_music(self):
-        if self.is_night and not self.night_music_playing:
+        if self.aurora_started and not self.final_music_playing:
+            pygame.mixer.music.load(self.final_music)
+            pygame.mixer.music.play(-1)
+            self.final_music_playing = True
+            self.night_music_playing = False  # Garante que a música noturna não seja considerada como tocando
+        elif self.is_night and not self.night_music_playing and not self.final_music_playing:
+            # Adiciona a condição 'and not self.final_music_playing' para não interromper a música final
             pygame.mixer.music.load(self.night_music)
             pygame.mixer.music.play(-1)
             self.night_music_playing = True
-        elif not self.is_night and self.night_music_playing:
+        elif not self.is_night and self.night_music_playing and not self.aurora_started:
+            # Certifica que a música do dia só será tocada se a aurora não estiver ativa
             pygame.mixer.music.load(self.day_music)
             pygame.mixer.music.play(-1)
             self.night_music_playing = False
+
   
     def draw(self, surface):
         mouse_x, mouse_y = pygame.mouse.get_pos()
