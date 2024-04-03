@@ -262,7 +262,7 @@ class WhiteEnemy(Enemy):
     def __init__(self, x, y):
         sprite_paths = [f'assets/enemy{i}.png' for i in range(4)]
         super().__init__(x, y, 84, 36, sprite_paths, speed=0.5, damage=3)
-        self.lives = 2
+        self.lives = 1
         self.score_value = 2
 
 class ShootingEnemy(Enemy):
@@ -291,10 +291,10 @@ class ShootingEnemy(Enemy):
 class Boss(AnimatedEntity):
     def __init__(self, x, y):
         super().__init__(x, y, 150, 150,[f'assets/bee{i}.png' for i in range(4)], 0.2)  
-        self.max_lives = 400
+        self.max_lives =  300
         self.lives = self.max_lives
-        self.damage = 0.01  
-        self.speed = 2 
+        self.damage = 0.001  
+        self.speed = 1
         self.attack_pattern = 0
         self.phase = 1
         self.attack_cooldown = 3500
@@ -329,10 +329,10 @@ class Boss(AnimatedEntity):
     def update(self, player_x, player_y, game_manager):
         self.perform_attack(game_manager)
         # Atualiza a fase do boss com base em sua vida
-        if self.lives <= 200 and self.phase == 1:
+        if self.lives <= 150 and self.phase == 1:
             self.phase = 2
             self.speed += 1.5
-            self.attack_cooldown = 2000
+            self.attack_cooldown = 2500
             
         self.move_towards_player(player_x, player_y)
         
@@ -343,16 +343,16 @@ class Boss(AnimatedEntity):
 class NightBoss(AnimatedEntity):
     def __init__(self, x, y):
         super().__init__(x, y, 150, 150, [f'assets/coruja{i}.png' for i in range(4)], animation_time=0.2)
-        self.max_lives = 400
+        self.max_lives = 300
         self.lives = self.max_lives
         self.speed = 3
         self.last_direction_change = pygame.time.get_ticks()
-        self.direction_change_interval = 1500  # Muda de direção a cada 2 segundos
+        self.direction_change_interval = 500  # Muda de direção a cada 2 segundos
         self.dx, self.dy = self.random_direction()
         self.attack_interval = 1700  # Ataca a cada 1 segundo
         self.last_attack_time = pygame.time.get_ticks()
         self.projectile_angle = 0
-        self.damage = 1
+        self.damage = 0.001
         self.phase = 1
 
     def random_direction(self):
@@ -382,9 +382,9 @@ class NightBoss(AnimatedEntity):
 
         self.projectile_angle += 10  # Aumenta o ângulo para o próximo projétil
 
-        if self.lives <= 200 and self.phase == 1:
+        if self.lives <= 150 and self.phase == 1:
             self.phase = 2
-            self.speed += 8
+            self.speed += 2
             self.attack_interval = 1700
 
     def attack(self, game_manager):
@@ -405,8 +405,8 @@ class DragaoAncestral(AnimatedEntity):
         super().__init__(x, y, 150, 150, sprite_paths, animation_time=0.2)
         self.max_lives = 400
         self.lives = self.max_lives
-        self.speed = 2
-        self.attack_cooldown = 2000  # 3 segundos entre ataques
+        self.speed = 1.7
+        self.attack_cooldown = 1500  # 3 segundos entre ataques
         self.last_attack_time = 0
         self.angulo_de_ataque = 0
         
@@ -435,7 +435,7 @@ class DragaoAncestral(AnimatedEntity):
             game_manager.projectiles.append(projectile)
 
     def perform_call_of_the_elders(self, game_manager):
-        meteor_count = 5  # Define quantos meteoros serão invocados por vez
+        meteor_count = 6  # Define quantos meteoros serão invocados por vez
         for _ in range(meteor_count):
             # Escolha posições aleatórias para cada meteoro cair
             x_pos = random.randint(0, game_manager.screen_width)
@@ -453,7 +453,7 @@ class DragaoAncestral(AnimatedEntity):
 
         for i in range(numero_de_projeteis):
             angulo = math.radians(angulo_inicial + (i * (360 / numero_de_projeteis)))
-            game_manager.spawn_projectile(self.x + self.width / 2, self.y + self.height / 2, angulo, is_special=True, owner="cogu", speed=2)
+            game_manager.spawn_projectile(self.x + self.width / 2, self.y + self.height / 2, angulo, is_special=True, owner="cogu", speed=1.7)
 
     def perform_attack(self):
         # Implemente os ataques do Dragão Ancestral aqui
@@ -474,6 +474,7 @@ class DragaoAncestral(AnimatedEntity):
             elif attack_choice == "spiral_attack":
                 self.perform_spiral_attack(game_manager)  # Implementar este método
             self.last_attack_time = current_time
+  
     def draw(self, surface):
             super().draw(surface)  # Chama o método draw da classe base para desenhar o sprite
             self.update_sprites()  # Atualiza para o próximo sprite, se necessário
@@ -515,7 +516,7 @@ class Projectile:
             self.sprites = [pygame.transform.scale(pygame.image.load(path).convert_alpha(), (50, 50)) for path in sprite_paths]
         elif owner == "cogu":
             self.original_sprite = pygame.image.load("assets/veneno.png").convert_alpha()
-            self.sprites.append(pygame.transform.scale(self.original_sprite, (60,60)))
+            self.sprites.append(pygame.transform.scale(self.original_sprite, (50,50)))
 
         # self.sprite = self.original_sprite
         self.sprite = self.sprites[self.current_sprite]
@@ -588,7 +589,7 @@ class GameManager:
         
         pygame.mixer.music.load(self.day_music)  
         pygame.mixer.music.play(-1)    
-        pygame.mixer.music.set_volume(0.5)     
+        pygame.mixer.music.set_volume(0.2)     
         
         self.reset_game()
         
@@ -895,7 +896,7 @@ class GameManager:
 
         for life in self.lives[:]: 
             if pygame.Rect(self.player.x, self.player.y, self.player.width, self.player.height).colliderect(pygame.Rect(life.x, life.y, life.width, life.height)):
-                self.player.current_health += 5  
+                self.player.current_health += 6  
                 self.player.current_health = min(self.player.current_health, self.player.max_health)
                 self.player.health_bar.update(self.player.current_health)
                 
