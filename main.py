@@ -294,10 +294,10 @@ class Boss(AnimatedEntity):
         self.max_lives =  300
         self.lives = self.max_lives
         self.damage = 0.001  
-        self.speed = 1
+        self.speed = 1.5
         self.attack_pattern = 0
         self.phase = 1
-        self.attack_cooldown = 3500
+        self.attack_cooldown = 3000
         self.last_attack_time = 0
         
     def move_towards_player(self, player_x, player_y):
@@ -331,8 +331,8 @@ class Boss(AnimatedEntity):
         # Atualiza a fase do boss com base em sua vida
         if self.lives <= 150 and self.phase == 1:
             self.phase = 2
-            self.speed += 1.5
-            self.attack_cooldown = 2500
+            self.speed += 1.8
+            self.attack_cooldown = 2300
             
         self.move_towards_player(player_x, player_y)
         
