@@ -104,7 +104,7 @@ class Player(AnimatedEntity):
         super().__init__(x, y, 100, 100, sprite_paths)
         self.speed = 7
         self.lives = 5
-        self.max_health = 50
+        self.max_health = 70
         self.current_health =self.max_health
         self.health_bar = StatusBar(10, 10, 50, 8, (251,242,54), self.max_health)  
         self.max_mana = 50
@@ -291,13 +291,13 @@ class ShootingEnemy(Enemy):
 class Boss(AnimatedEntity):
     def __init__(self, x, y):
         super().__init__(x, y, 150, 150,[f'assets/bee{i}.png' for i in range(4)], 0.2)  
-        self.max_lives = 6
+        self.max_lives = 400
         self.lives = self.max_lives
-        self.damage = 0.1  
+        self.damage = 0.01  
         self.speed = 2 
         self.attack_pattern = 0
         self.phase = 1
-        self.attack_cooldown = 3000
+        self.attack_cooldown = 3500
         self.last_attack_time = 0
         
     def move_towards_player(self, player_x, player_y):
@@ -329,9 +329,9 @@ class Boss(AnimatedEntity):
     def update(self, player_x, player_y, game_manager):
         self.perform_attack(game_manager)
         # Atualiza a fase do boss com base em sua vida
-        if self.lives <= 5 and self.phase == 1:
+        if self.lives <= 200 and self.phase == 1:
             self.phase = 2
-            self.speed -= 1
+            self.speed += 1.5
             self.attack_cooldown = 2000
             
         self.move_towards_player(player_x, player_y)
@@ -343,13 +343,13 @@ class Boss(AnimatedEntity):
 class NightBoss(AnimatedEntity):
     def __init__(self, x, y):
         super().__init__(x, y, 150, 150, [f'assets/coruja{i}.png' for i in range(4)], animation_time=0.2)
-        self.max_lives = 6
+        self.max_lives = 400
         self.lives = self.max_lives
         self.speed = 3
         self.last_direction_change = pygame.time.get_ticks()
-        self.direction_change_interval = 2000  # Muda de direção a cada 2 segundos
+        self.direction_change_interval = 1500  # Muda de direção a cada 2 segundos
         self.dx, self.dy = self.random_direction()
-        self.attack_interval = 1000  # Ataca a cada 1 segundo
+        self.attack_interval = 1700  # Ataca a cada 1 segundo
         self.last_attack_time = pygame.time.get_ticks()
         self.projectile_angle = 0
         self.damage = 1
@@ -382,10 +382,10 @@ class NightBoss(AnimatedEntity):
 
         self.projectile_angle += 10  # Aumenta o ângulo para o próximo projétil
 
-        if self.lives <= 5 and self.phase == 1:
+        if self.lives <= 200 and self.phase == 1:
             self.phase = 2
             self.speed += 8
-            self.attack_cooldown = 5
+            self.attack_interval = 1700
 
     def attack(self, game_manager):
         for i in range(8):  # Dispara 8 projéteis em direções diferentes
@@ -403,7 +403,7 @@ class DragaoAncestral(AnimatedEntity):
     def __init__(self, x, y):
         sprite_paths = [f'assets/lastboss{i}.png' for i in range(4)]  # Substitua com os caminhos corretos para suas sprites
         super().__init__(x, y, 150, 150, sprite_paths, animation_time=0.2)
-        self.max_lives = 6
+        self.max_lives = 400
         self.lives = self.max_lives
         self.speed = 2
         self.attack_cooldown = 2000  # 3 segundos entre ataques
