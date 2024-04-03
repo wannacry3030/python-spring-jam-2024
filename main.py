@@ -104,23 +104,23 @@ class Player(AnimatedEntity):
         super().__init__(x, y, 100, 100, sprite_paths)
         self.speed = 7
         self.lives = 5
-        self.max_health = 100
+        self.max_health = 50
         self.current_health =self.max_health
         self.health_bar = StatusBar(10, 10, 50, 8, (251,242,54), self.max_health)  
-        self.max_mana = 100
+        self.max_mana = 50
         self.current_mana = 20
         self.mana_bar = StatusBar(x, y - 20, 50, 8, (115,122,212), self.max_mana)  # Mana
         self.mana_cost = 10
 #atributos do dash ----------------------------------------------------------------------------#
         self.dash_speed = 30
-        self.mana_cost_for_dash = 10
+        self.mana_cost_for_dash = 25
         self.dash_duration = 200 # milissegundos
         self.dash_cooldown = 2000# 10 segundos
         self.last_dash_time = 0
         self.is_dashing = False
         self.dash_start_time = 0
 #atributos special shot --------------------------------------------------------------------_--#
-        self.special_shot_cooldown = 3000 # miliseg
+        self.special_shot_cooldown = 2000 # miliseg
         self.last_special_shot_time = 0
 
         self.dash_icon = pygame.transform.scale(pygame.image.load('assets/sprint.png').convert_alpha(), (64, 64))
@@ -193,7 +193,7 @@ class Player(AnimatedEntity):
                     self.current_mana -= self.mana_cost
                     self.last_special_shot_time = current_time  # Atualiza o tempo do último tiro especial
                     # Cria e retorna um projétil especial com rotação
-                    return Projectile(self.x + self.width / 2, self.y + self.height / 2, angle, size=5, is_special=True)
+                    return Projectile(self.x + self.width / 2, self.y + self.height / 2, angle, size=5, is_special=True, damage=3)
         else:
             # Cria e retorna um projétil normal com rotação
             return Projectile(self.x + self.width / 2, self.y + self.height / 2, angle)
@@ -254,24 +254,24 @@ class Enemy(AnimatedEntity):
 class RedEnemy(Enemy):
     def __init__(self, x, y):
         sprite_paths = [f'assets/rat{i}.png' for i in range(3)]
-        super().__init__(x, y, 100, 100, sprite_paths, speed=1.5, damage=2)
+        super().__init__(x, y, 100, 100, sprite_paths, speed=1.5, damage=4.5)
         self.lives = 3
-        self.score_value = 2
+        self.score_value = 3
 
 class WhiteEnemy(Enemy):
     def __init__(self, x, y):
         sprite_paths = [f'assets/enemy{i}.png' for i in range(4)]
-        super().__init__(x, y, 84, 36, sprite_paths, speed=0.5, damage=1)
-        self.lives = 1
-        self.score_value = 1
+        super().__init__(x, y, 84, 36, sprite_paths, speed=0.5, damage=3)
+        self.lives = 2
+        self.score_value = 2
 
 class ShootingEnemy(Enemy):
     def __init__(self, x, y):
-        super().__init__(x, y, 60, 60, [f'assets/corvo{i}.png' for i in range(4)], speed=1, damage=1)
+        super().__init__(x, y, 60, 60, [f'assets/corvo{i}.png' for i in range(4)], speed=1, damage=4)
         self.shoot_cooldown = 2000  # Cooldown de 2000 ms (2 segundos)
         self.last_shot_time = pygame.time.get_ticks()
-        self.score_value = 2
-        self.lives = 5
+        self.score_value = 4
+        self.lives = 4
 
     def attempt_to_shoot(self, game_manager):
         current_time = pygame.time.get_ticks()
@@ -500,7 +500,7 @@ class Projectile:
         
         if owner == "player" and not is_special:
             self.original_sprite = pygame.image.load("assets/semente.png").convert_alpha()
-            self.sprites.append(pygame.transform.scale(self.original_sprite, (24,24)))
+            self.sprites.append(pygame.transform.scale(self.original_sprite, (34,34)))
         elif owner == "player" and is_special:
             self.original_sprite = pygame.image.load("assets/leaf.png").convert_alpha()
             self.sprites.append(pygame.transform.scale(self.original_sprite, (100,100)))
@@ -559,7 +559,7 @@ class GameManager:
         self.current_score = 0
         self.high_score = self.load_high_score()
         
-        self.mana_recharge_rate = 0.03
+        self.mana_recharge_rate = 0.07
         self.damage_indicators = []
         self.mana_orbs = []
         
@@ -648,9 +648,9 @@ class GameManager:
     def spawn_projectile(self, x, y, angle, is_special, owner="",speed=15):
         size = 3 if is_special else 1
         radius = 10 if is_special else 5
-        damage = 3 if is_special else 1 
+        damage = 3 if is_special else 4 
         if owner == "enemy":
-            speed = 5
+            speed = 3
 
         new_projectile = Projectile(x, y, angle, size, speed, radius, damage, owner)
         self.projectiles.append(new_projectile)
@@ -704,13 +704,13 @@ class GameManager:
     def spawn_enemies(self):
         # Define o modificador de velocidade baseado no ciclo atual
 
-        if len(self.enemies) < 5 and random.randint(0, 60) == 0:
+        if len(self.enemies) < 6 and random.randint(0, 60) == 0:
             enemy = WhiteEnemy(random.randint(0, screen_width - 50), random.randint(0, screen_height - 50))
             self.enemies.append(enemy)
-        if len(self.enemies) < 5 and random.randint(0, 120) == 0:
+        if len(self.enemies) < 4 and random.randint(0, 120) == 0:
             enemy = RedEnemy(random.randint(0, screen_width - 50), random.randint(0, screen_height - 50))
             self.enemies.append(enemy)
-        if len(self.enemies) < 5 and random.randint(0, 1000) < 5:
+        if len(self.enemies) < 6 and random.randint(0, 1000) < 5:
             enemy = ShootingEnemy(random.randint(0, screen_width - 60), random.randint(0, screen_height - 60))
             self.enemies.append(enemy)
 
@@ -921,7 +921,7 @@ class GameManager:
             if math.sqrt((self.player.x + self.player.width / 2 - (orb.x + orb.width / 2))**2 + (self.player.y + self.player.height / 2 - (orb.y + orb.height / 2))**2) < (self.player.width / 2 + orb.width / 2):
                 # Se houver colisão
                 self.mana_orbs.remove(orb)
-                self.player.current_mana += 5  # Adiciona mana ao jogador
+                self.player.current_mana += 10  # Adiciona mana ao jogador
                 self.player.current_mana = min(self.player.current_mana, self.player.max_mana)  # Garante que a mana não exceda o máximo
                 self.water_sound.play()
         
